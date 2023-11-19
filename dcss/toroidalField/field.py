@@ -60,7 +60,7 @@ class ToroidalField:
             except:
                 thetaArr, zetaArr = np.array([thetaArr]), np.array([zetaArr])
         angleMat = (
-            np.dot(self.xm.reshape(-1,1), thetaArr.reshape(1,-1)) + 
+            np.dot(self.xm.reshape(-1,1), thetaArr.reshape(1,-1)) -  
             self.nfp * np.dot(self.xn.reshape(-1,1), zetaArr.reshape(1,-1))
         )
         valueArr = 2 * (
