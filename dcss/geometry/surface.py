@@ -30,7 +30,7 @@ class Surface:
         return derivateTor(self.z)
 
 
-class Surface_cylindAngle(Surface):
+class Surface_cylindricalAngle(Surface):
 
     def __init__(self, r: ToroidalField, z: ToroidalField, reverseToroidalAngle: bool=True) -> None:
         super().__init__(r, z)
