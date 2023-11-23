@@ -1,2 +1,2 @@
-# DCSS
-Direct Construction of Stellarator Shapes
+# DCS
+Direct Construction of Stellarator Configurations

@@ -1,11 +1,11 @@
 import setuptools
-from dcss import __version__
+from dcs import __version__
 
 with open("README.md", "r") as fh:
     long_description = fh.read()
 
 setuptools.setup(
-    name="dcss",
+    name="dcs",
     version=__version__,
     description="Direct Construction of Stellarator Shapes",
     long_description=long_description,
@@ -16,7 +16,7 @@ setuptools.setup(
         "Programming Language :: Python :: 3",
         "Topic :: Scientific/Engineering",
     ],
-    url="https://github.com/liuk2020/DCSS",
+    url="https://github.com/liuk2020/dcs",
     author="Ke Liu",
     author_email="lk2020@mail.ustc.edu.cn",
     license="GNU 3.0",
