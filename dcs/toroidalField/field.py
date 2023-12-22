@@ -136,7 +136,7 @@ class ToroidalField:
         ax.set_yticks(thetaValue)
         ax.set_yticklabels(["$0$", r"$\pi$", r"$2\pi$"], fontsize=18)
         return
- 
+
     # operator overloading ####################################################
     def __add__(self, other):
         assert self.nfp == other.nfp
@@ -206,6 +206,18 @@ class ToroidalField:
             return True
         except:
             return False
+
+    # class method
+    @classmethod
+    def constantField(cls, constant: int, nfp: int, mpol: int, ntor: int):
+        reArr = np.zeros((2*ntor+1)*mpol+ntor+1)
+        imArr = np.zeros((2*ntor+1)*mpol+ntor+1)
+        reArr[0] = constant
+        field =  cls(
+            nfp, mpol, ntor, reArr, imArr
+        )
+        return field
+
 
 
 if __name__ == "__main__": 
