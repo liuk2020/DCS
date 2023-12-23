@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-# equilibriumProblem.py
+# straightSurface.py
 
 
 import numpy as np 
@@ -11,7 +11,10 @@ from ..toroidalField import derivatePol, derivateTor, changeResolution
 from typing import Tuple
 
 
-class SurfaceField:
+class StraightSurfaceField:
+    """
+    Field on a specified toroidal surface in straight-field-line coordinates. 
+    """
 
     def __init__(self, surf: Surface_cylindricalAngle, iota: float) -> None:
         self.initSurf(surf)

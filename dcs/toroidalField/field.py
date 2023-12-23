@@ -10,7 +10,7 @@ from typing import Tuple
 class ToroidalField:
     r"""
     The Fourier representation of the field f defined on the toroidal surface. 
-    $$ f(\theta, \zeta) = \sum_{m,n} F_{m,n}\exp(i(m\theta+nN_{fp}\zeta)) $$
+    $$ f(\theta, \zeta) = \sum_{m,n} F_{m,n}\exp(i(m\theta-nN_{fp}\zeta)) $$
     """
 
     def __init__(self, nfp: int, mpol: int, ntor: int, reArr: np.ndarray, imArr: np.ndarray) -> None:

@@ -1,1 +1,1 @@
-from .equilibriumProblem import SurfaceField
+from .straightSurface import StraightSurfaceField
