@@ -47,50 +47,9 @@ class ArbitrarySurfaceField(StraightSurfaceField):
 
     @classmethod
     def readVMEC(cls, vmecfile: str, surfaceIndex: int=-1, ssym: bool=True):
-        vmecData = VMECOut(vmecfile)
-        nfp = int(vmecData.nfp) 
-        mpol = int(vmecData.mpol) - 1 
-        ntor = int(vmecData.ntor) 
+        vmecData = VMECOut(vmecfile,ssym=ssym)
         iota = vmecData.iotaf[surfaceIndex]
-        rbc = vmecData.rmnc[surfaceIndex, :] 
-        zbs = vmecData.zmns[surfaceIndex, :] 
-        lams = vmecData.lmns[surfaceIndex, :]
-        if not ssym: 
-            rbs = vmecData.rmns[surfaceIndex, :] 
-            zbc = vmecData.zmnc[surfaceIndex, :] 
-            lamc = vmecData.lmnc[surfaceIndex, :]
-        else:
-            rbs = np.zeros_like(rbc) 
-            zbc = np.zeros_like(zbs) 
-            lamc = np.zeros_like(lams)
-        rbc[1:-1] = rbc[1:-1] / 2 
-        zbs[1:-1] = zbs[1:-1] / 2 
-        rbs[1:-1] = rbs[1:-1] / 2 
-        zbs[1:-1] = zbs[1:-1] / 2 
-        lams[1:-1] = lams[1:-1] / 2
-        lamc[1:-1] = lamc[1:-1] / 2
-        _rField = ToroidalField(
-            nfp = nfp, 
-            mpol = mpol, 
-            ntor = ntor, 
-            reArr = rbc, 
-            imArr = -rbs 
-        )
-        _zField = ToroidalField(
-            nfp = nfp, 
-            mpol = mpol, 
-            ntor = ntor, 
-            reArr = zbc, 
-            imArr = -zbs 
-        )
-        lam = ToroidalField(
-            nfp = nfp, 
-            mpol = mpol, 
-            ntor = ntor, 
-            reArr = lamc, 
-            imArr = -lams 
-        )
-        surf = Surface_cylindricalAngle(_rField, _zField)
+        surf, lam = vmecData.getSurface()
         return cls(surf, lam, iota)
 
 

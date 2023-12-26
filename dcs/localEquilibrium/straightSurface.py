@@ -186,42 +186,6 @@ class StraightSurfaceField:
             + _n*self.nfp*self.Q.getRe(m-_m,n-_n)
         )
 
-    @classmethod
-    def readVMEC(cls, vmecfile: str, surfaceIndex: int=-1):
-        vmecData = VMECOut(vmecfile)
-        nfp = int(vmecData.nfp) 
-        mpol = int(vmecData.mpol) - 1 
-        ntor = int(vmecData.ntor) 
-        iota = vmecData.iotaf[surfaceIndex]
-        rbc = vmecData.rmnc[surfaceIndex, :] 
-        zbs = vmecData.zmns[surfaceIndex, :] 
-        try: 
-            rbs = vmecData.rmns[surfaceIndex, :] 
-            zbc = vmecData.zmnc[surfaceIndex, :] 
-        except:
-            rbs = np.zeros_like(rbc) 
-            zbc = np.zeros_like(zbs) 
-        rbc[1:-1] = rbc[1:-1] / 2 
-        zbs[1:-1] = zbs[1:-1] / 2 
-        rbs[1:-1] = rbs[1:-1] / 2 
-        zbs[1:-1] = zbs[1:-1] / 2 
-        _rField = ToroidalField(
-            nfp = nfp, 
-            mpol = mpol, 
-            ntor = ntor, 
-            reArr = rbc, 
-            imArr = -rbs 
-        )
-        _zField = ToroidalField(
-            nfp = nfp, 
-            mpol = mpol, 
-            ntor = ntor, 
-            reArr = zbc, 
-            imArr = -zbs 
-        )
-        surf = Surface_cylindricalAngle(_rField, _zField)
-        return cls(surf, iota)
-
 
 if __name__ == "__main__": 
     pass
