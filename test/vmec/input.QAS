@@ -5,7 +5,6 @@
   NCURR =    1
   MPOL =   11  NTOR =    6
   NVACSKIP =    6
-  LNYQUIST = True
 !----- Runtime Parameters -----
   DELT =  0.75
   NITER = 20000
