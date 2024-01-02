@@ -139,28 +139,50 @@ class ToroidalField:
 
     # operator overloading ####################################################
     def __add__(self, other):
-        assert self.nfp == other.nfp
-        assert self.mpol == other.mpol
-        assert self.ntor == other.ntor
-        return ToroidalField(
-            nfp = self.nfp, 
-            mpol = self.mpol, 
-            ntor = self.ntor,
-            reArr = self.reArr + other.reArr, 
-            imArr = self.imArr + other.imArr
-        )
+        if isinstance(other, ToroidalField):
+            assert self.nfp == other.nfp
+            assert self.mpol == other.mpol
+            assert self.ntor == other.ntor
+            return ToroidalField(
+                nfp = self.nfp, 
+                mpol = self.mpol, 
+                ntor = self.ntor,
+                reArr = self.reArr + other.reArr, 
+                imArr = self.imArr + other.imArr
+            )
+        else:
+            _reArr = np.zeros_like(self.reArr) + self.reArr
+            _reArr[0] = _reArr[0] + other
+            return ToroidalField(
+                nfp = self.nfp, 
+                mpol = self.mpol, 
+                ntor = self.ntor,
+                reArr = _reArr, 
+                imArr = self.imArr + other.imArr
+            )
 
     def __sub__(self, other):
-        assert self.nfp == other.nfp
-        assert self.mpol == other.mpol
-        assert self.ntor == other.ntor
-        return ToroidalField(
-            nfp = self.nfp, 
-            mpol = self.mpol, 
-            ntor = self.ntor,
-            reArr = self.reArr - other.reArr, 
-            imArr = self.imArr - other.imArr
-        )
+        if isinstance(other, ToroidalField):
+            assert self.nfp == other.nfp
+            assert self.mpol == other.mpol
+            assert self.ntor == other.ntor
+            return ToroidalField(
+                nfp = self.nfp, 
+                mpol = self.mpol, 
+                ntor = self.ntor,
+                reArr = self.reArr - other.reArr, 
+                imArr = self.imArr - other.imArr
+            )
+        else:
+            _reArr = np.zeros_like(self.reArr) + self.reArr
+            _reArr[0] = _reArr[0] - other
+            return ToroidalField(
+                nfp = self.nfp, 
+                mpol = self.mpol, 
+                ntor = self.ntor,
+                reArr = _reArr, 
+                imArr = self.imArr + other.imArr
+            )
 
     def __mul__(self, other):
         if isinstance(other, ToroidalField):
