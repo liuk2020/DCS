@@ -103,7 +103,7 @@ class ToroidalField:
         self.imArr[self.indexMap(m, n)] = value
 
     # plotting ###############################################################
-    def plot_plt(self, ntheta: int=360, nzeta: int=360, ax=None, fig=None, onePeriod: bool=True, **kwargs):
+    def plot_plt(self, ntheta: int=360, nzeta: int=360, fig=None, ax=None, onePeriod: bool=True, **kwargs):
         from matplotlib import cm
         import matplotlib.pyplot as plt 
         thetaArr = np.linspace(0, 2*np.pi, ntheta)

@@ -38,6 +38,10 @@ class StraightSurfaceField:
 
     @property
     def Jacobian(self):
+        r"""
+        Retunrn:
+            $\frac{1}{\sqrt{g}}$
+        """
         try:
             return self._Jacobian
         except AttributeError:

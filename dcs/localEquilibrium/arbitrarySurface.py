@@ -28,11 +28,11 @@ class ArbitrarySurfaceField(StraightSurfaceField):
         self.g_thetatheta, self.g_thetazeta, self.g_zetazeta = self.surf.metric 
         self.P = (
             (ToroidalField.constantField(self.iota, self.nfp, self.mpol, self.ntor) - derivateTor(self.lambdaField)) * self.g_thetazeta +
-            ToroidalField.constantField(1, self.nfp, self.mpol, self.ntor) + derivatePol(self.lambdaField) * self.g_zetazeta
+            (ToroidalField.constantField(1, self.nfp, self.mpol, self.ntor) + derivatePol(self.lambdaField)) * self.g_zetazeta
         )
         self.Q = (
             (ToroidalField.constantField(self.iota, self.nfp, self.mpol, self.ntor) - derivateTor(self.lambdaField)) * self.g_thetatheta +
-            ToroidalField.constantField(1, self.nfp, self.mpol, self.ntor) + derivatePol(self.lambdaField) * self.g_thetazeta
+            (ToroidalField.constantField(1, self.nfp, self.mpol, self.ntor) + derivatePol(self.lambdaField)) * self.g_thetazeta
         )
         self.D = derivatePol(self.P) - derivateTor(self.Q)
 
