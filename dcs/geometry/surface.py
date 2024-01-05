@@ -6,7 +6,8 @@
 import numpy as np 
 import matplotlib.pyplot as plt 
 from ..toroidalField import ToroidalField 
-from ..toroidalField import derivatePol, derivateTor
+from ..toroidalField import derivatePol, derivateTor 
+from ..toroidalField import changeResolution 
 
 
 class Surface:
@@ -29,7 +30,11 @@ class Surface:
 
     @property
     def dZdZeta(self) -> ToroidalField:
-        return derivateTor(self.z)
+        return derivateTor(self.z) 
+
+    def changeResolution(self, mpol: int, ntor: int): 
+        self.r = changeResolution(self.r, mpol, ntor)
+        self.z = changeResolution(self.z, mpol, ntor)
 
 
 class Surface_cylindricalAngle(Surface):
