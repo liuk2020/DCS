@@ -65,9 +65,9 @@ class Surface_cylindricalAngle(Surface):
     @property
     def metric(self):
         g_thetatheta = self.dRdTheta*self.dRdTheta + self.dZdTheta*self.dZdTheta
-        g_thetaphi = self.dRdTheta*self.dRdZeta + self.dZdTheta*self.dZdZeta
+        g_thetazeta = self.dRdTheta*self.dRdZeta + self.dZdTheta*self.dZdZeta
         g_zetazeta = self.dRdZeta*self.dRdZeta + self.r*self.r + self.dZdZeta*self.dZdZeta
-        return g_thetatheta, g_thetaphi, g_zetazeta
+        return g_thetatheta, g_thetazeta, g_zetazeta
 
 
 if __name__ == "__main__":
