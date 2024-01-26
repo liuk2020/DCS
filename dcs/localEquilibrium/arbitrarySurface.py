@@ -34,7 +34,6 @@ class ArbitrarySurfaceField(StraightSurfaceField):
             (ToroidalField.constantField(self.iota, self.nfp, self.mpol, self.ntor) - derivateTor(self.lambdaField)) * self.g_thetatheta +
             (ToroidalField.constantField(1, self.nfp, self.mpol, self.ntor) + derivatePol(self.lambdaField)) * self.g_thetazeta
         )
-        self.D = derivatePol(self.P) - derivateTor(self.Q)
 
     def ininSurfLambda(self, surf: Surface_cylindricalAngle, lam: ToroidalField) -> None: 
         """
