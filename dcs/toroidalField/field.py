@@ -26,8 +26,16 @@ class ToroidalField:
         self.nfp = nfp
         self.mpol = mpol
         self.ntor = ntor
-        self.reArr = reArr
-        self.imArr = imArr
+        self._reArr = reArr
+        self._imArr = imArr
+    
+    @property
+    def reArr(self) -> np.ndarray:
+        return self._reArr
+
+    @property
+    def imArr(self) -> np.ndarray:
+        return self._imArr
 
     @property
     def xm(self) -> np.ndarray:

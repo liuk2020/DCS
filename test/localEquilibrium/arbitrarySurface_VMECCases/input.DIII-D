@@ -4,7 +4,7 @@
   TCON0 = 2.00E+00
   NFP = 1
   NCURR = 01
-  NTOR = 0 
+  NTOR = 1 
   MPOL = 12
   NTHETA = 48
   GAMMA =   0.000000E+00

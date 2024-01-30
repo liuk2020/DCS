@@ -13,10 +13,10 @@ from typing import Tuple
 class VMECOut():
     
     def __init__(self, fileName: str, ssym: bool=True) -> None:
-        vmeclib = xarray.open_dataset(fileName)
-        self.keys = [key for key in vmeclib.data_vars] 
+        _vmeclib = xarray.open_dataset(fileName)
+        self.keys = [key for key in _vmeclib.data_vars] 
         for key in self.keys:
-            setattr(self, key, vmeclib[key].values)
+            setattr(self, key, _vmeclib[key].values)
         self.nfp = int(self.nfp) 
         self.ssym = ssym
 
@@ -41,7 +41,7 @@ class VMECOut():
         rbc[1:-1] = rbc[1:-1] / 2 
         zbs[1:-1] = zbs[1:-1] / 2 
         rbs[1:-1] = rbs[1:-1] / 2 
-        zbs[1:-1] = zbs[1:-1] / 2 
+        zbc[1:-1] = zbc[1:-1] / 2 
         lams[1:-1] = lams[1:-1] / 2
         lamc[1:-1] = lamc[1:-1] / 2
         _rField = ToroidalField(
@@ -121,6 +121,29 @@ class VMECOut():
             imArr = -bSupVs
         )
         return _bSupU, _bSupV
+
+    def getB(self, surfaceIndex: int=-1) -> ToroidalField:
+        """
+        returns:
+            B
+        """
+        mpol_nyq = int(np.max(self.xm_nyq))
+        ntor_nyq = int(np.max(self.xn_nyq/self.nfp))
+        bc = self.bmnc[surfaceIndex, :] 
+        if not self.ssym:
+            bs = self.bmns[surfaceIndex, :]
+        else:
+            bs = np.zeros_like(bc)
+        bc[1:-1] = bc[1:-1] / 2
+        bs[1:-1] = bs[1:-1] / 2
+        _bField = ToroidalField(
+            nfp = self.nfp,
+            mpol = mpol_nyq, 
+            ntor = ntor_nyq,
+            reArr = bc,
+            imArr = -bs
+        )
+        return _bField
 
 
 if __name__ == "__main__":
