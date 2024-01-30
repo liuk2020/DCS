@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # arbitrarySurface.py
 
-# test
+
 import numpy as np 
 from .straightSurface import StraightSurfaceField
 from ..geometry import Surface_cylindricalAngle
