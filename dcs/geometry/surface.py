@@ -36,13 +36,6 @@ class Surface:
         self.r = changeResolution(self.r, mpol, ntor)
         self.z = changeResolution(self.z, mpol, ntor)
 
-
-class Surface_cylindricalAngle(Surface):
-
-    def __init__(self, r: ToroidalField, z: ToroidalField, reverseToroidalAngle: bool=True) -> None:
-        super().__init__(r, z)
-        self.reverseToroidalAngle = reverseToroidalAngle 
-
     def plot_plt(self, ntheta: int=360, nzeta: int=360, fig=None, ax=None, **kwargs): 
         if ax is None: 
             fig = plt.figure()
@@ -60,14 +53,6 @@ class Surface_cylindricalAngle(Surface):
         ax.plot_surface(xArr, yArr, zArr, color="coral") 
         plt.axis("equal")
         return fig
-
-
-    @property
-    def metric(self):
-        g_thetatheta = self.dRdTheta*self.dRdTheta + self.dZdTheta*self.dZdTheta
-        g_thetazeta = self.dRdTheta*self.dRdZeta + self.dZdTheta*self.dZdZeta
-        g_zetazeta = self.dRdZeta*self.dRdZeta + self.r*self.r + self.dZdZeta*self.dZdZeta
-        return g_thetatheta, g_thetazeta, g_zetazeta
 
 
 if __name__ == "__main__":

@@ -1,1 +1,2 @@
-from .vacuumSurface import VacuumSurface
+from .vacuumProblem import VacuumSurface
+from .qsProblem import QsSurface
