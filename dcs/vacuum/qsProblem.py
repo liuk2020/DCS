@@ -3,10 +3,10 @@
 # qsSurfaceQS.py
 
 
+import numpy as np
 from .vacuumProblem import VacuumSurface
 from ..geometry import Surface_BoozerAngle 
 from ..toroidalField import derivateTor, derivatePol
-import numpy as np
 from scipy.optimize import minimize
 from typing import List
 
