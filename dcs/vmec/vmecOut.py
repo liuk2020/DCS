@@ -20,7 +20,7 @@ class VMECOut():
         self.nfp = int(self.nfp) 
         self.ssym = ssym
 
-    def getSurface(self, surfaceIndex: int=-1) -> Tuple:
+    def getSurface(self, surfaceIndex: int=-1, reverseToroidal: bool=True) -> Tuple:
         """
         returns:
             surface, lambda
@@ -65,7 +65,7 @@ class VMECOut():
             reArr = lamc, 
             imArr = -lams 
         )
-        surf = Surface_cylindricalAngle(_rField, _zField)
+        surf = Surface_cylindricalAngle(_rField, _zField, reverseToroidalAngle=reverseToroidal)
         return surf, lam
 
     def getJacobian(self, surfaceIndex: int=-1) -> ToroidalField:

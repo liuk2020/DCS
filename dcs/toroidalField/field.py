@@ -80,7 +80,12 @@ class ToroidalField:
             m, n = thetaArr.shape
             return valueArr.reshape(m, n)
         except:
-            return valueArr
+            if isinstance(valueArr, np.ndarray) and valueArr.shape[0] == 1: 
+                return valueArr.flatten()
+            elif isinstance(valueArr, np.ndarray) and valueArr.shape[1] == 1: 
+                return valueArr.flatten()
+            else:
+                return valueArr
 
     def getRe(self, m: int=0, n: int=0) -> float: 
         if abs(m) > self.mpol or abs(n) > self.ntor:
@@ -166,7 +171,7 @@ class ToroidalField:
                 mpol = self.mpol, 
                 ntor = self.ntor,
                 reArr = _reArr, 
-                imArr = self.imArr + other.imArr
+                imArr = self.imArr
             )
 
     def __sub__(self, other):
@@ -189,7 +194,7 @@ class ToroidalField:
                 mpol = self.mpol, 
                 ntor = self.ntor,
                 reArr = _reArr, 
-                imArr = self.imArr + other.imArr
+                imArr = self.imArr
             )
 
     def __mul__(self, other):

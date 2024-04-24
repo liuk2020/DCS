@@ -14,7 +14,7 @@ class BoozerForm(Booz_xform):
     def __init__(self) -> None:
         super().__init__()
 
-    def surface(self, surfaceIndex: int=-1, asym: bool=True, reverseToroidal: bool=True) -> Surface_BoozerAngle: 
+    def surface(self, surfaceIndex: int=-1, asym: bool=True, reverseToroidal: bool=False, reverseOmegaAngle:bool=True) -> Surface_BoozerAngle: 
         nfp = int(self.nfp)
         mpol = int(self.mboz) - 1
         ntor = int(self.nboz) 
@@ -44,25 +44,24 @@ class BoozerForm(Booz_xform):
             reArr = zbc, 
             imArr = -zbs
         ) 
-        if reverseToroidal:
-            nus = self.numns_b[:, surfaceIndex].copy()
-            if not asym:
-                nuc = self.numnc_b[:, surfaceIndex].copy()
-            else: 
-                nuc = np.zeros_like(nus)
-            nuc[1:-1] = nuc[1:-1] / 2
-            nus[1:-1] = nus[1:-1] / 2
-            _omegafield = ToroidalField(
-                nfp = nfp,
-                mpol = mpol, 
-                ntor = ntor,
-                reArr = -nuc, 
-                imArr = -nus
-            )
-        # TODO
+        nus = self.numns_b[:, surfaceIndex].copy()
+        if not asym:
+            nuc = self.numnc_b[:, surfaceIndex].copy()
         else: 
-            pass
-        return Surface_BoozerAngle(_rfield, _zfield, _omegafield) 
+            nuc = np.zeros_like(nus)
+        nuc[1:-1] = nuc[1:-1] / 2
+        nus[1:-1] = nus[1:-1] / 2
+        _omegafield = ToroidalField(
+            nfp = nfp,
+            mpol = mpol, 
+            ntor = ntor,
+            reArr = -nuc, 
+            imArr = -nus
+        )
+        return Surface_BoozerAngle(_rfield, _zfield, _omegafield, reverseToroidalAngle=reverseToroidal, reverseOmegaAngle=reverseOmegaAngle) 
+
+    def getIota(self, surfaceIndex: int=-1):
+        return self.iota[surfaceIndex]
 
 
 if __name__ == "__main__": 

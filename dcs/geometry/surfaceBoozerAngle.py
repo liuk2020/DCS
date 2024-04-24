@@ -13,21 +13,30 @@ from ..toroidalField import changeResolution, fftToroidalField
 from ..misc import print_progress
 from scipy.optimize import fixed_point
 from scipy.integrate import dblquad
+from typing import Tuple
 
 
 class Surface_BoozerAngle(Surface):
     r"""
     The magnetic surface in Boozer coordinates $(\theta, \zeta)$.  
         $$ \phi = -\zeta + \omega(\theta,\zete) $$ 
+    or
+        $$ \phi = \mp\zeta \pm \omega(\theta,\zeta) $$
+    When `reverseToroidalAngle` is `False`, the sign of zeta will become positive. 
+        $$ \phi = \zeta + \omega(\theta,\zete) $$
+    When `reverseOmegaAngle` is `True`, the sign of omega will become negative. 
+        $$ \phi = -\zeta - \omega(\theta,\zete) $$
     There is a mapping with coordinates corrdinates $(R, \phi, Z)$
         $$ R = R(\theta, \zeta) $$ 
-        $$ \phi = -\zeta + \omega(\theta,\zete) $$ 
+        $$ \phi = \phi(\theta, \zeta) $$ 
         $$ Z = Z(\theta, \zeta) $$ 
     """
 
-    def __init__(self, r: ToroidalField, z: ToroidalField, omega: ToroidalField) -> None:
+    def __init__(self, r: ToroidalField, z: ToroidalField, omega: ToroidalField, reverseToroidalAngle: bool=True, reverseOmegaAngle: bool=False) -> None:
         super().__init__(r, z)
         self.omega = omega
+        self.reverseToroidalAngle = reverseToroidalAngle
+        self.reverseOmegaAngle = reverseOmegaAngle
 
     def changeResolution(self, mpol: int, ntor: int): 
         self.mpol = mpol
@@ -39,7 +48,16 @@ class Surface_BoozerAngle(Surface):
     @property
     def metric(self): 
         dPhidTheta = derivatePol(self.omega)
-        dPhidZeta = derivateTor(self.omega)+ToroidalField.constantField(-1,self.omega.nfp,self.omega.mpol,self.omega.ntor)
+        if self.reverseOmegaAngle: 
+            dPhidTheta = dPhidTheta*(-1)
+        if not self.reverseOmegaAngle and self.reverseToroidalAngle:
+            dPhidZeta = derivateTor(self.omega) - 1 
+        elif not self.reverseOmegaAngle and not self.reverseToroidalAngle: 
+            dPhidZeta = derivateTor(self.omega) + 1 
+        if self.reverseOmegaAngle and self.reverseToroidalAngle:
+            dPhidZeta = derivateTor(self.omega)*(-1) - 1 
+        else:
+            dPhidZeta = derivateTor(self.omega)*(-1) + 1 
         g_thetatheta = (
             self.dRdTheta*self.dRdTheta + 
             self.r*self.r*dPhidTheta*dPhidTheta +
@@ -57,6 +75,46 @@ class Surface_BoozerAngle(Surface):
         )
         return g_thetatheta, g_thetazeta, g_zetazeta
 
+    def getRZ(self, thetaGrid: np.ndarray, zetaGrid: np.ndarray) -> Tuple[np.ndarray]: 
+        if self.reverseToroidalAngle: 
+            zetaGrid = -zetaGrid
+        rArr = self.r.getValue(thetaGrid, zetaGrid)
+        zArr = self.z.getValue(thetaGrid, zetaGrid)
+        return rArr, zArr
+
+    def getZeta(self, theta: np.ndarray, phi: np.ndarray, xtol: float=1e-15) -> np.ndarray:
+        def zetaValue(zeta, theta, phi):
+            if self.reverseToroidalAngle and not self.reverseOmegaAngle:
+                return (
+                    self.omega.getValue(theta, zeta) - phi
+                )
+            elif self.reverseToroidalAngle and self.reverseOmegaAngle:
+                return (
+                    - self.omega.getValue(theta, zeta) - phi
+                )
+            elif not self.reverseToroidalAngle and self.reverseOmegaAngle:
+                return (
+                    self.omega.getValue(theta, zeta) + phi
+                )
+            else: 
+                return (
+                    - self.omega.getValue(theta, zeta) + phi
+                )
+        return (
+            fixed_point(zetaValue, phi, args=(theta, phi), xtol=xtol)
+        )
+        
+
+    def getPhi(self, thetaArr: np.ndarray, zetaArr: np.ndarray) -> np.ndarray:
+        omegaArr = self.omega.getValue(thetaArr, zetaArr)
+        if self.reverseToroidalAngle and not self.reverseOmegaAngle:
+            return (-zetaArr + omegaArr)
+        elif self.reverseToroidalAngle and self.reverseOmegaAngle:
+            return (-zetaArr - omegaArr)
+        elif not self.reverseToroidalAngle and self.reverseOmegaAngle:
+            return (zetaArr - omegaArr)
+        else:
+            return (zetaArr + omegaArr)
 
     def toCylinder(self, method: str="DFT", **kwargs) -> Surface_cylindricalAngle:
         if method == "DFT":
@@ -64,8 +122,12 @@ class Surface_BoozerAngle(Surface):
         else:
             return self.toCylinder_integrate()
 
-    def toCylinder_dft(self, mpol: int=12, ntor: int=12, xtol: float=1e-13) -> Surface_cylindricalAngle:
+    def toCylinder_dft(self, mpol: int=None, ntor: int=None, xtol: float=1e-15) -> Surface_cylindricalAngle:
         
+        if mpol is None:
+            mpol = 2*self.mpol+1
+        if ntor is None:
+            ntor = 2*self.ntor+1
         deltaTheta = 2*np.pi / (2*mpol+1) 
         deltaPhi = 2*np.pi / self.nfp / (2*ntor+1) 
         sampleTheta, samplePhi = np.arange(2*mpol+1)*deltaTheta, -np.arange(2*ntor+1)*deltaPhi 
@@ -73,9 +135,23 @@ class Surface_BoozerAngle(Surface):
         
         # Find fixed point of zeta. 
         def zetaValue(zeta, theta, phi):
-            return (
-                self.omega.getValue(float(theta), float(zeta)) - phi
-            )
+            if self.reverseToroidalAngle and not self.reverseOmegaAngle:
+                return (
+                    self.omega.getValue(float(theta), float(zeta)) - phi
+                )
+            elif self.reverseToroidalAngle and self.reverseOmegaAngle:
+                return (
+                    - self.omega.getValue(float(theta), float(zeta)) - phi
+                )
+            elif not self.reverseToroidalAngle and self.reverseOmegaAngle:
+                return (
+                    self.omega.getValue(float(theta), float(zeta)) + phi
+                )
+            else: 
+                return (
+                    - self.omega.getValue(float(theta), float(zeta)) + phi
+                )
+
         gridZeta = np.zeros_like(gridPhi)
         for i in range(len(gridZeta)): 
             for j in range(len(gridZeta[0])): 
@@ -220,8 +296,11 @@ class Surface_BoozerAngle(Surface):
         thetaGrid, zetaGrid = np.meshgrid(thetaArr, zetaArr) 
         rArr = self.r.getValue(thetaGrid, zetaGrid)
         zArr = self.z.getValue(thetaGrid, zetaGrid)
-        omegaArr = self.omega.getValue(thetaGrid, zetaGrid)
-        phiArr = - zetaGrid + omegaArr
+        # omegaArr = self.omega.getValue(thetaGrid, zetaGrid)
+        # phiArr = zetaGrid - omegaArr
+        phiArr = self.getPhi(thetaGrid, zetaGrid)
+        if self.reverseToroidalAngle:
+            phiArr = -phiArr
         xArr = rArr * np.cos(phiArr)
         yArr = rArr * np.sin(phiArr)
         ax.plot_surface(xArr, yArr, zArr, color="coral") 
