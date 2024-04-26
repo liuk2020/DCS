@@ -13,7 +13,8 @@ class ToroidalField:
     $$ f(\theta, \zeta) = \sum_{m,n} F_{m,n}\exp(i(m\theta-nN_{fp}\zeta)) $$
     """
 
-    def __init__(self, nfp: int, mpol: int, ntor: int, reArr: np.ndarray, imArr: np.ndarray) -> None:
+    def __init__(self, nfp: int, mpol: int, ntor: int, reArr: np.ndarray, imArr: np.ndarray, 
+    reIndex: bool=True, imIndex: bool=True) -> None:
         """
         ### Initialization with Fourier harmonics. 
         Args:
@@ -28,14 +29,24 @@ class ToroidalField:
         self.ntor = ntor
         self._reArr = reArr
         self._imArr = imArr
+        self.arrlen = (2*ntor+1)*mpol+ntor+1
+        assert reIndex or imIndex
+        self.reIndex = reIndex
+        self.imIndex = imIndex
     
     @property
     def reArr(self) -> np.ndarray:
-        return self._reArr
+        if not self.reIndex:
+            return np.zeros(self.arrlen)
+        else:
+            return self._reArr
 
     @property
     def imArr(self) -> np.ndarray:
-        return self._imArr
+        if not self.imIndex:
+            return np.zeros(self.arrlen)
+        else:
+            return self._imArr
 
     @property
     def xm(self) -> np.ndarray:
@@ -88,6 +99,8 @@ class ToroidalField:
                 return valueArr
 
     def getRe(self, m: int=0, n: int=0) -> float: 
+        if not self.reIndex:
+            return 0
         if abs(m) > self.mpol or abs(n) > self.ntor:
             return 0
         elif m == 0 and n < 0:
@@ -98,6 +111,8 @@ class ToroidalField:
             return self.reArr[self.indexMap(m, n)] 
 
     def getIm(self, m: int, n: int) -> float:
+        if not self.imIndex:
+            return 0
         if abs(m) > self.mpol or abs(n) > self.ntor:
             return 0
         elif m == 0 and n < 0:
@@ -108,10 +123,12 @@ class ToroidalField:
             return self.imArr[self.indexMap(m, n)] 
 
     def setRe(self, m: int=0, n: int=0, value: float=0): 
+        assert self.reIndex
         assert 0 <= m <= self.mpol and -self.ntor <= n <= self.ntor
         self.reArr[self.indexMap(m, n)] = value 
 
     def setIm(self, m: int=0, n: int=0, value: float=0): 
+        assert self.imIndex 
         assert 0 <= m <= self.mpol and -self.ntor <= n <= self.ntor
         self.imArr[self.indexMap(m, n)] = value
 
@@ -161,7 +178,9 @@ class ToroidalField:
                 mpol = self.mpol, 
                 ntor = self.ntor,
                 reArr = self.reArr + other.reArr, 
-                imArr = self.imArr + other.imArr
+                imArr = self.imArr + other.imArr, 
+                reIndex = self.reIndex or other.reIndex, 
+                imIndex = self.imIndex or other.imIndex
             )
         else:
             _reArr = np.zeros_like(self.reArr) + self.reArr
@@ -171,7 +190,9 @@ class ToroidalField:
                 mpol = self.mpol, 
                 ntor = self.ntor,
                 reArr = _reArr, 
-                imArr = self.imArr
+                imArr = self.imArr, 
+                reIndex = self.reIndex, 
+                imIndex = self.imIndex
             )
 
     def __sub__(self, other):
@@ -184,7 +205,9 @@ class ToroidalField:
                 mpol = self.mpol, 
                 ntor = self.ntor,
                 reArr = self.reArr - other.reArr, 
-                imArr = self.imArr - other.imArr
+                imArr = self.imArr - other.imArr, 
+                reIndex = self.reIndex or other.reIndex, 
+                imIndex = self.imIndex or other.imIndex
             )
         else:
             _reArr = np.zeros_like(self.reArr) + self.reArr
@@ -194,7 +217,9 @@ class ToroidalField:
                 mpol = self.mpol, 
                 ntor = self.ntor,
                 reArr = _reArr, 
-                imArr = self.imArr
+                imArr = self.imArr, 
+                reIndex = self.reIndex, 
+                imIndex = self.imIndex
             )
 
     def __mul__(self, other):
@@ -203,24 +228,41 @@ class ToroidalField:
             mpol, ntor = self.mpol, self.ntor
             nums = (2*ntor+1)*mpol+ntor+1
             reArr, imArr = np.zeros(nums), np.zeros(nums)
+            # for i in range(nums):
+            #     m, n = self.indexReverseMap(i)
+            #     for _m in range(-mpol, mpol+1):
+            #         for _n in range(-ntor, ntor+1):
+            #             reArr[i] += (
+            #                 self.getRe(_m,_n)*other.getRe(m-_m,n-_n) - 
+            #                 self.getIm(_m,_n)*other.getIm(m-_m,n-_n)
+            #             )
+            #             imArr[i] += (
+            #                 self.getRe(_m,_n)*other.getIm(m-_m,n-_n) + 
+            #                 self.getIm(_m,_n)*other.getRe(m-_m,n-_n)
+            #             )
+            ##### stellarator symmetry 
             for i in range(nums):
                 m, n = self.indexReverseMap(i)
                 for _m in range(-mpol, mpol+1):
                     for _n in range(-ntor, ntor+1):
-                        reArr[i] += (
-                            self.getRe(_m,_n)*other.getRe(m-_m,n-_n) - 
-                            self.getIm(_m,_n)*other.getIm(m-_m,n-_n)
-                        )
-                        imArr[i] += (
-                            self.getRe(_m,_n)*other.getIm(m-_m,n-_n) + 
-                            self.getIm(_m,_n)*other.getRe(m-_m,n-_n)
-                        )
+                        if self.reIndex and other.reIndex:
+                            reArr[i] += self.getRe(_m,_n)*other.getRe(m-_m,n-_n)
+                        if self.imIndex and other.imIndex:
+                            reArr[i] -= self.getIm(_m,_n)*other.getIm(m-_m,n-_n)
+                        if self.reIndex and other.imIndex:
+                            imArr[i] += self.getRe(_m,_n)*other.getIm(m-_m,n-_n)
+                        if self.imIndex and other.reIndex:
+                            imArr[i] += self.getIm(_m,_n)*other.getRe(m-_m,n-_n)
+            reIndex = (self.reIndex and other.reIndex) or (self.imIndex and self.imIndex)
+            imIndex = (self.reIndex and other.imIndex) or (self.reIndex and self.imIndex)
             return ToroidalField(
                 nfp = self.nfp, 
                 mpol = mpol, 
                 ntor = ntor,
                 reArr = reArr,
-                imArr = imArr
+                imArr = imArr, 
+                reIndex = reIndex, 
+                imIndex = imIndex
             )
         else:
             return ToroidalField(
@@ -228,7 +270,9 @@ class ToroidalField:
                 mpol = self.mpol, 
                 ntor = self.ntor, 
                 reArr = other * self.reArr,
-                imArr = other * self.imArr
+                imArr = other * self.imArr, 
+                reIndex = self.reIndex, 
+                imIndex = self.imIndex
             )
 
     def __eq__(self, other) -> bool:
@@ -248,8 +292,9 @@ class ToroidalField:
         reArr = np.zeros((2*ntor+1)*mpol+ntor+1)
         imArr = np.zeros((2*ntor+1)*mpol+ntor+1)
         reArr[0] = constant
+        reIndex, imIndex = True, False 
         field =  cls(
-            nfp, mpol, ntor, reArr, imArr
+            nfp, mpol, ntor, reArr, imArr, reIndex, imIndex
         )
         return field
 

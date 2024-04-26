@@ -14,16 +14,21 @@ def changeResolution(originalField: ToroidalField, mpol: int, ntor: int) -> Toro
         mpol = mpol, 
         ntor = ntor, 
         reArr = np.zeros(nums), 
-        imArr = np.zeros(nums)
+        imArr = np.zeros(nums), 
+        reIndex = originalField.reIndex, 
+        imIndex = originalField.imIndex
     )
     for i in range(nums):
         m, n = _field.indexReverseMap(i)
-        _field.setRe(m, n, originalField.getRe(m, n))
-        _field.setIm(m, n, originalField.getIm(m, n))
+        if _field.reIndex:
+            _field.setRe(m, n, originalField.getRe(m, n))
+        if _field.imIndex:
+            _field.setIm(m, n, originalField.getIm(m, n))
     return _field 
 
 
 def normalize(originalField: ToroidalField) -> ToroidalField:
+    assert originalField.reIndex
     return ToroidalField(
         nfp = originalField.nfp, 
         mpol = originalField.mpol, 

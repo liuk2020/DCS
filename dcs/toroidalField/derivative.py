@@ -15,7 +15,9 @@ def derivatePol(field: ToroidalField) -> ToroidalField:
         mpol = field.mpol, 
         ntor = field.ntor, 
         reArr = - field.xm*field.imArr, 
-        imArr =  field.xm*field.reArr
+        imArr =  field.xm*field.reArr, 
+        reIndex = field.imIndex, 
+        imIndex = field.reIndex
     )
 
 
@@ -28,7 +30,9 @@ def derivateTor(field: ToroidalField) -> ToroidalField:
         mpol = field.mpol, 
         ntor = field.ntor, 
         reArr = field.nfp*field.xn*field.imArr, 
-        imArr = - field.nfp*field.xn*field.reArr
+        imArr = - field.nfp*field.xn*field.reArr, 
+        reIndex = field.imIndex, 
+        imIndex = field.reIndex
     )
 
 

@@ -10,6 +10,7 @@ from ..toroidalField import changeResolution
 from typing import Tuple
 
 
+# TODO: This function was not tested. 
 def vmec2straight(vmecData: VMECOut, surfaceIndex: int=-1) -> Tuple[ToroidalField]:
     r"""
     Return: 

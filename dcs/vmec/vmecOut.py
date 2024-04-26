@@ -37,7 +37,7 @@ class VMECOut():
         else:
             rbs = np.zeros_like(rbc) 
             zbc = np.zeros_like(zbs) 
-            lamc = np.zeros_like(lams)
+            lamc = np.zeros_like(lams) 
         rbc[1:-1] = rbc[1:-1] / 2 
         zbs[1:-1] = zbs[1:-1] / 2 
         rbs[1:-1] = rbs[1:-1] / 2 
@@ -49,21 +49,27 @@ class VMECOut():
             mpol = mpol, 
             ntor = ntor, 
             reArr = rbc, 
-            imArr = -rbs 
+            imArr = -rbs, 
+            reIndex = True, 
+            imIndex = not self.ssym
         )
         _zField = ToroidalField(
             nfp = self.nfp, 
             mpol = mpol, 
             ntor = ntor, 
             reArr = zbc, 
-            imArr = -zbs 
+            imArr = -zbs, 
+            reIndex = not self.ssym, 
+            imIndex = True
         )
         lam = ToroidalField(
             nfp = self.nfp, 
             mpol = mpol, 
             ntor = ntor, 
             reArr = lamc, 
-            imArr = -lams 
+            imArr = -lams, 
+            reIndex = not self.ssym, 
+            imIndex = True
         )
         surf = Surface_cylindricalAngle(_rField, _zField, reverseToroidalAngle=reverseToroidal)
         return surf, lam
@@ -83,7 +89,9 @@ class VMECOut():
             mpol = mpol_nyq, 
             ntor = ntor_nyq,
             reArr = gc,
-            imArr = -gs
+            imArr = -gs, 
+            reIndex = True, 
+            imIndex = not self.ssym
         )
         return _Jacobian
     
@@ -111,14 +119,18 @@ class VMECOut():
             mpol = mpol_nyq, 
             ntor = ntor_nyq,
             reArr = bSupUc,
-            imArr = -bSupUs
+            imArr = -bSupUs, 
+            reIndex = True, 
+            imIndex = not self.ssym
         )
         _bSupV = ToroidalField(
             nfp = self.nfp,
             mpol = mpol_nyq, 
             ntor = ntor_nyq,
             reArr = bSupVc,
-            imArr = -bSupVs
+            imArr = -bSupVs, 
+            reIndex = True, 
+            imIndex = not self.ssym
         )
         return _bSupU, _bSupV
 
@@ -141,7 +153,9 @@ class VMECOut():
             mpol = mpol_nyq, 
             ntor = ntor_nyq,
             reArr = bc,
-            imArr = -bs
+            imArr = -bs, 
+            reIndex = True, 
+            imIndex = not self.ssym
         )
         return _bField
 

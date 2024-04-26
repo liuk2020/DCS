@@ -35,14 +35,18 @@ class BoozerForm(Booz_xform):
             mpol = mpol, 
             ntor = ntor,
             reArr = rbc, 
-            imArr = -rbs
+            imArr = -rbs, 
+            reIndex = True, 
+            imIndex = not asym
         ) 
         _zfield = ToroidalField(
             nfp = nfp, 
             mpol = mpol, 
             ntor = ntor,
             reArr = zbc, 
-            imArr = -zbs
+            imArr = -zbs, 
+            reIndex = not asym, 
+            imIndex = True
         ) 
         nus = self.numns_b[:, surfaceIndex].copy()
         if not asym:
@@ -56,7 +60,9 @@ class BoozerForm(Booz_xform):
             mpol = mpol, 
             ntor = ntor,
             reArr = -nuc, 
-            imArr = -nus
+            imArr = -nus, 
+            reIndex = not asym, 
+            imIndex = True
         )
         return Surface_BoozerAngle(_rfield, _zfield, _omegafield, reverseToroidalAngle=reverseToroidal, reverseOmegaAngle=reverseOmegaAngle) 
 
