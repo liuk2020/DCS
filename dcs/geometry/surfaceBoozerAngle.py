@@ -154,6 +154,7 @@ class Surface_BoozerAngle(Surface):
         
         from ..misc import print_progress
         gridZeta = np.zeros_like(gridPhi)
+        print("Convert a toroidal surface from Boozer coordinates to cylindrical coordinates... ")
         for i in range(len(gridZeta)): 
             for j in range(len(gridZeta[0])): 
                 gridZeta[i,j] = float(

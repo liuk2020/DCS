@@ -23,31 +23,31 @@ class QsSurface(VacuumSurface):
         self.m = m
         self.n = n
 
-    def solve(self, debug: bool=False, order: int=2, weight: List[float]=[0.8, 0.2], printLog: bool=True, printIter: int=50, **kwargs): 
-        if kwargs.get("method") == None:
-            kwargs.update({"method": "BFGS"})
-        self.iterations = 0
-        res = minimize(self.cost, self.initValue_DOF, (order, weight, printLog, printIter), **kwargs)
-        if debug: 
-            return res
-        else:
-            pass
+    # def solve(self, debug: bool=False, order: int=2, weight: List[float]=[0.8, 0.2], printLog: bool=True, printIter: int=50, **kwargs): 
+    #     if kwargs.get("method") == None:
+    #         kwargs.update({"method": "BFGS"})
+    #     self.iterations = 0
+    #     res = minimize(self.cost, self.initValue_DOF, (order, weight, printLog, printIter), **kwargs)
+    #     if debug: 
+    #         return res
+    #     else:
+    #         pass
 
-    def cost(self, dofValue: np.ndarray, order: int, weight: List[float], printLog: bool, printIter: int) -> float: 
-        self.setValue_DOF(dofValue) 
-        normalizeFfun, normalizeGfun = self.funErr()
-        costF = np.linalg.norm(np.hstack((normalizeFfun.reArr, normalizeFfun.imArr)), ord=order) 
-        costG = np.linalg.norm(np.hstack((normalizeGfun.reArr, normalizeGfun.imArr)), ord=order) 
-        costValue = weight[0]*costF + weight[1]*costG
-        # costValue = np.linalg.norm(np.hstack((normalizeFfun.reArr, normalizeFfun.imArr, normalizeGfun.reArr, normalizeGfun.imArr)), ord=order) 
-        self.iterations += 1
-        if printLog and (self.iterations%printIter == 0):
-            print("iter: {:<5d}".format(self.iterations) + 
-            ", iota: {:+5f}".format(self.iota) + 
-            ", errF: {:5e}".format(costF) + 
-            ", errG: {:5e}".format(costG) + 
-            ", objective value: {:5e}".format(costValue))
-        return costValue
+    # def cost(self, dofValue: np.ndarray, order: int, weight: List[float], printLog: bool, printIter: int) -> float: 
+    #     self.setValue_DOF(dofValue) 
+    #     normalizeFfun, normalizeGfun = self.funErr()
+    #     costF = np.linalg.norm(np.hstack((normalizeFfun.reArr, normalizeFfun.imArr)), ord=order) 
+    #     costG = np.linalg.norm(np.hstack((normalizeGfun.reArr, normalizeGfun.imArr)), ord=order) 
+    #     costValue = weight[0]*costF + weight[1]*costG
+    #     # costValue = np.linalg.norm(np.hstack((normalizeFfun.reArr, normalizeFfun.imArr, normalizeGfun.reArr, normalizeGfun.imArr)), ord=order) 
+    #     self.iterations += 1
+    #     if printLog and (self.iterations%printIter == 0):
+    #         print("iter: {:<5d}".format(self.iterations) + 
+    #         ", iota: {:+5f}".format(self.iota) + 
+    #         ", errF: {:5e}".format(costF) + 
+    #         ", errG: {:5e}".format(costG) + 
+    #         ", objective value: {:5e}".format(costValue))
+    #     return costValue
 
     def funValue(self) -> Tuple[ToroidalField]:
         g_thetatheta, g_thetazeta, g_zetazeta = self.surf.metric
