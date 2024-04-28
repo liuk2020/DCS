@@ -4,6 +4,7 @@
 
 
 import numpy as np
+from scipy.signal import convolve2d 
 from typing import Tuple
 
 
@@ -47,6 +48,28 @@ class ToroidalField:
             return np.zeros(self.arrlen)
         else:
             return self._imArr
+
+    @property
+    def reMatrix(self) -> np.ndarray: 
+        rematrix = np.zeros((2*self.mpol+1, 2*self.ntor+1)) 
+        if not self.reIndex:
+            return rematrix 
+        for index, value in enumerate(self.reArr):
+            m, n = self.indexReverseMap(index) 
+            rematrix[self.mpol+m, self.ntor+n] = value 
+            rematrix[self.mpol-m, self.ntor-n] = value
+        return rematrix
+
+    @property
+    def imMatrix(self) -> np.ndarray: 
+        immatrix = np.zeros((2*self.mpol+1, 2*self.ntor+1)) 
+        if not self.imIndex:
+            return immatrix 
+        for index, value in enumerate(self.imArr):
+            m, n = self.indexReverseMap(index) 
+            immatrix[self.mpol+m, self.ntor+n] = value 
+            immatrix[self.mpol-m, self.ntor-n] = -value
+        return immatrix
 
     @property
     def xm(self) -> np.ndarray:
@@ -222,45 +245,81 @@ class ToroidalField:
                 imIndex = self.imIndex
             )
 
+    # def __mul__(self, other):
+    #     if isinstance(other, ToroidalField):
+    #         assert self.nfp == other.nfp
+    #         mpol, ntor = self.mpol, self.ntor
+    #         nums = (2*ntor+1)*mpol+ntor+1
+    #         reArr, imArr = np.zeros(nums), np.zeros(nums)
+    #         # for i in range(nums):
+    #         #     m, n = self.indexReverseMap(i)
+    #         #     for _m in range(-mpol, mpol+1):
+    #         #         for _n in range(-ntor, ntor+1):
+    #         #             reArr[i] += (
+    #         #                 self.getRe(_m,_n)*other.getRe(m-_m,n-_n) - 
+    #         #                 self.getIm(_m,_n)*other.getIm(m-_m,n-_n)
+    #         #             )
+    #         #             imArr[i] += (
+    #         #                 self.getRe(_m,_n)*other.getIm(m-_m,n-_n) + 
+    #         #                 self.getIm(_m,_n)*other.getRe(m-_m,n-_n)
+    #         #             )
+    #         ##### stellarator symmetry 
+    #         for i in range(nums):
+    #             m, n = self.indexReverseMap(i)
+    #             for _m in range(-mpol, mpol+1):
+    #                 for _n in range(-ntor, ntor+1):
+    #                     if self.reIndex and other.reIndex:
+    #                         reArr[i] += self.getRe(_m,_n)*other.getRe(m-_m,n-_n)
+    #                     if self.imIndex and other.imIndex:
+    #                         reArr[i] -= self.getIm(_m,_n)*other.getIm(m-_m,n-_n)
+    #                     if self.reIndex and other.imIndex:
+    #                         imArr[i] += self.getRe(_m,_n)*other.getIm(m-_m,n-_n)
+    #                     if self.imIndex and other.reIndex:
+    #                         imArr[i] += self.getIm(_m,_n)*other.getRe(m-_m,n-_n)
+    #         reIndex = (self.reIndex and other.reIndex) or (self.imIndex and self.imIndex)
+    #         imIndex = (self.reIndex and other.imIndex) or (self.reIndex and self.imIndex)
+    #         return ToroidalField(
+    #             nfp = self.nfp, 
+    #             mpol = mpol, 
+    #             ntor = ntor,
+    #             reArr = reArr,
+    #             imArr = imArr, 
+    #             reIndex = reIndex, 
+    #             imIndex = imIndex
+    #         )
+    #     else:
+    #         return ToroidalField(
+    #             nfp = self.nfp, 
+    #             mpol = self.mpol, 
+    #             ntor = self.ntor, 
+    #             reArr = other * self.reArr,
+    #             imArr = other * self.imArr, 
+    #             reIndex = self.reIndex, 
+    #             imIndex = self.imIndex
+    #         )
+
     def __mul__(self, other):
         if isinstance(other, ToroidalField):
             assert self.nfp == other.nfp
             mpol, ntor = self.mpol, self.ntor
-            nums = (2*ntor+1)*mpol+ntor+1
-            reArr, imArr = np.zeros(nums), np.zeros(nums)
-            # for i in range(nums):
-            #     m, n = self.indexReverseMap(i)
-            #     for _m in range(-mpol, mpol+1):
-            #         for _n in range(-ntor, ntor+1):
-            #             reArr[i] += (
-            #                 self.getRe(_m,_n)*other.getRe(m-_m,n-_n) - 
-            #                 self.getIm(_m,_n)*other.getIm(m-_m,n-_n)
-            #             )
-            #             imArr[i] += (
-            #                 self.getRe(_m,_n)*other.getIm(m-_m,n-_n) + 
-            #                 self.getIm(_m,_n)*other.getRe(m-_m,n-_n)
-            #             )
-            ##### stellarator symmetry 
-            for i in range(nums):
-                m, n = self.indexReverseMap(i)
-                for _m in range(-mpol, mpol+1):
-                    for _n in range(-ntor, ntor+1):
-                        if self.reIndex and other.reIndex:
-                            reArr[i] += self.getRe(_m,_n)*other.getRe(m-_m,n-_n)
-                        if self.imIndex and other.imIndex:
-                            reArr[i] -= self.getIm(_m,_n)*other.getIm(m-_m,n-_n)
-                        if self.reIndex and other.imIndex:
-                            imArr[i] += self.getRe(_m,_n)*other.getIm(m-_m,n-_n)
-                        if self.imIndex and other.reIndex:
-                            imArr[i] += self.getIm(_m,_n)*other.getRe(m-_m,n-_n)
+            reMat = np.zeros((2*mpol+1, 2*ntor+1))
+            imMat = np.zeros((2*mpol+1, 2*ntor+1))
+            if self.reIndex and other.reIndex:
+                reMat += convolve2d(self.reMatrix, other.reMatrix, mode='same')
+            if self.imIndex and other.imIndex:
+                reMat -= convolve2d(self.imMatrix, other.imMatrix, mode='same')
+            if self.reIndex and other.imIndex:
+                imMat += convolve2d(self.reMatrix, other.imMatrix, mode='same')
+            if self.imIndex and other.reIndex:
+                imMat += convolve2d(self.imMatrix, other.reMatrix, mode='same')
             reIndex = (self.reIndex and other.reIndex) or (self.imIndex and self.imIndex)
             imIndex = (self.reIndex and other.imIndex) or (self.reIndex and self.imIndex)
             return ToroidalField(
                 nfp = self.nfp, 
                 mpol = mpol, 
                 ntor = ntor,
-                reArr = reArr,
-                imArr = imArr, 
+                reArr = reMat.flatten()[(2*ntor+1)*mpol+ntor :],
+                imArr = imMat.flatten()[(2*ntor+1)*mpol+ntor :], 
                 reIndex = reIndex, 
                 imIndex = imIndex
             )

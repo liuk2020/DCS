@@ -122,7 +122,7 @@ class Surface_BoozerAngle(Surface):
         else:
             return self.toCylinder_integrate()
 
-    def toCylinder_dft(self, mpol: int=None, ntor: int=None, xtol: float=1e-15) -> Surface_cylindricalAngle:
+    def toCylinder_dft(self, mpol: int=None, ntor: int=None, xtol: float=1e-13) -> Surface_cylindricalAngle:
         
         if mpol is None:
             mpol = 2*self.mpol+1
@@ -151,13 +151,15 @@ class Surface_BoozerAngle(Surface):
                 return (
                     - self.omega.getValue(float(theta), float(zeta)) + phi
                 )
-
+        
+        from ..misc import print_progress
         gridZeta = np.zeros_like(gridPhi)
         for i in range(len(gridZeta)): 
             for j in range(len(gridZeta[0])): 
                 gridZeta[i,j] = float(
                     fixed_point(zetaValue, gridZeta[i,j], args=(gridTheta[i,j], gridPhi[i,j]), xtol=xtol)
                 )
+                print_progress(i*len(gridZeta[0])+j+1, len(gridZeta)*len(gridZeta[0]))
         
         sampleR = self.r.getValue(gridTheta, gridZeta)
         sampleZ = self.z.getValue(gridTheta, gridZeta)
