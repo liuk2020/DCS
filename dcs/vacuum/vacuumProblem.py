@@ -56,10 +56,10 @@ class VacuumSurface():
     def iota(self):
         return self._iota
 
-    def changeIota(self, iota: float):
+    def setIota(self, iota: float):
         self._iota = iota
 
-    def changeResolution(self, mpol: int, ntor: int):
+    def setResolution(self, mpol: int, ntor: int):
         length = (2*ntor+1)*mpol + ntor + 1
         _dof = {}
         for dofkey in self.dofkeys:
@@ -72,7 +72,7 @@ class VacuumSurface():
         self.mpol, self.ntor = mpol, ntor 
         self.surf.changeResolution(mpol=mpol, ntor=ntor) 
 
-    def changeNfp(self, nfp: int):
+    def setNfp(self, nfp: int):
         self.nfp = nfp
         self.surf.r.nfp = nfp
         self.surf.z.nfp = nfp
