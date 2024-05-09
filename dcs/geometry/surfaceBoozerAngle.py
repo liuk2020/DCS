@@ -3,6 +3,7 @@
 # surfaceBoozerAngle.py
 
 
+import h5py
 import numpy as np 
 import matplotlib.pyplot as plt 
 from .surface import Surface
@@ -104,7 +105,6 @@ class Surface_BoozerAngle(Surface):
             fixed_point(zetaValue, phi, args=(theta, phi), xtol=xtol)
         )
         
-
     def getPhi(self, thetaArr: np.ndarray, zetaArr: np.ndarray) -> np.ndarray:
         omegaArr = self.omega.getValue(thetaArr, zetaArr)
         if self.reverseToroidalAngle and not self.reverseOmegaAngle:
@@ -309,7 +309,75 @@ class Surface_BoozerAngle(Surface):
         ax.plot_surface(xArr, yArr, zArr, color="coral") 
         plt.axis("equal")
         return fig
-                
+
+    def writeH5(self, filename="surf"):
+        stellsym = (not self.r.imIndex) and (not self.z.reIndex) and (not self.omega.reIndex)
+        with h5py.File(filename+".h5", 'w') as f:
+            f.create_dataset(
+                "resolution", 
+                data = (self.nfp, self.mpol, self.ntor, int(stellsym), int(self.reverseToroidalAngle), int(self.reverseOmegaAngle)), 
+                dtype = "int32"
+            )
+            f.create_group("r") 
+            f.create_group("z") 
+            f.create_group("omega")
+            f["r"].create_dataset("re", data=self.r.reArr)
+            f["z"].create_dataset("im", data=self.z.imArr)
+            f["omega"].create_dataset("im", data=self.omega.imArr)
+            if not stellsym:
+                f["r"].create_dataset("im", data=self.r.imArr)
+                f["z"].create_dataset("re", data=self.z.reArr)
+                f["omega"].create_dataset("re", data=self.omega.reArr)
+
+    @classmethod
+    def readH5(cls, filename):
+        with h5py.File(filename, 'r') as f:
+            nfp = int(f["resolution"][0])
+            mpol = int(f["resolution"][1])
+            ntor = int(f["resolution"][2])
+            stellsym = bool(f["resolution"][3])
+            reverseToroidalAngle = bool(f["resolution"][4])
+            reverseOmegaAngle = bool(f["resolution"][5])
+            if stellsym:
+                _r = ToroidalField(
+                    nfp=nfp, mpol=mpol, ntor=ntor, 
+                    reArr=f["r"]["re"][:], 
+                    imArr=np.zeros_like(f["r"]["re"][:]), 
+                    imIndex=False
+                )
+                _z = ToroidalField(
+                    nfp=nfp, mpol=mpol, ntor=ntor, 
+                    reArr=np.zeros_like(f["z"]["im"][:]),
+                    imArr=f["z"]["im"][:],  
+                    reIndex=False
+                )
+                _omega = ToroidalField(
+                    nfp=nfp, mpol=mpol, ntor=ntor, 
+                    reArr=np.zeros_like(f["omega"]["im"][:]),
+                    imArr=f["omega"]["im"][:],  
+                    reIndex=False
+                )
+            else:
+                _r = ToroidalField(
+                    nfp=nfp, mpol=mpol, ntor=ntor, 
+                    reArr=f["r"]["re"][:], 
+                    imArr=f["r"]["im"][:]
+                )
+                _z = ToroidalField(
+                    nfp=nfp, mpol=mpol, ntor=ntor, 
+                    reArr=f["z"]["re"][:],
+                    imArr=f["z"]["im"][:] 
+                )
+                _omega = ToroidalField(
+                    nfp=nfp, mpol=mpol, ntor=ntor, 
+                    reArr=f["omega"]["re"][:],
+                    imArr=f["omega"]["im"][:]
+                )
+            return cls(
+                _r, _z, _omega, 
+                reverseToroidalAngle=reverseToroidalAngle, 
+                reverseOmegaAngle=reverseOmegaAngle
+            )
 
 if __name__ == "__main__":
     pass
