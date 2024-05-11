@@ -149,7 +149,7 @@ class VacuumSurface():
                     else: 
                         continue
         if self.freeIota:
-            self.changeIota(dofValue[-1])
+            self.setIota(dofValue[-1])
         return 
 
     @property
