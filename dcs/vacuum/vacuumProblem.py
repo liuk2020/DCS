@@ -18,7 +18,7 @@ class VacuumSurface():
         surf: Surface_BoozerAngle=None, 
         iota: float=0.618, 
         freeIota: bool = False, 
-        stemSym: bool = True
+        stellSym: bool = True
     ) -> None:
         if surf is None:
             self._init_surf()
@@ -29,7 +29,7 @@ class VacuumSurface():
             self.ntor = surf.r.ntor
         self._iota = iota
         self.freeIota = freeIota
-        self.stemSym = stemSym
+        self.setStellSym(stellSym)
         self._initDOF()
 
     def _init_surf(self): 
@@ -41,34 +41,57 @@ class VacuumSurface():
             z = ToroidalField.constantField(0, nfp=self.nfp, mpol=self.mpol, ntor=self.ntor), 
             omega = ToroidalField.constantField(0, nfp=self.nfp, mpol=self.mpol, ntor=self.ntor)
         )
+        self.surf.r.reIndex, self.surf.r.imIndex = True, True 
+        self.surf.z.reIndex, self.surf.z.imIndex = True, True 
+        self.surf.omega.reIndex, self.surf.omega.imIndex = True, True
+        self.surf.r.setRe(1, 0, 0.2)
+        self.surf.z.setIm(1, 0, 0.2)
 
     def _initDOF(self):
         length = (2*self.ntor+1)*self.mpol + self.ntor + 1
-        self.dof = {}
-        if self.stemSym:
-            self.dofkeys = ["rc", "zs", "omegas"]
-        else:
-            self.dofkeys = ["rc", "zs", "omegas", "rs", "zc", "omegac"]
-        for index in self.dofkeys:
-            self.dof[index] = [False for i in range(length)] 
+        self._dofGeometry = {}
+        for index in ["rc", "zs", "omegas", "rs", "zc", "omegac"]:
+            self._dofGeometry[index] = [False for i in range(length)] 
+
+    @property
+    def stellSym(self) -> bool:
+        return (not self.surf.r.imIndex) and (not self.surf.z.reIndex) and (not self.surf.omega.reIndex)
 
     @property
     def iota(self):
         return self._iota
+
+    @property
+    def dofkeys(self):
+        if self.stellSym:
+            _dofkeys = ["rc", "zs", "omegas"]
+        else:
+            _dofkeys = ["rc", "zs", "omegas", "rs", "zc", "omegac"]
+        return _dofkeys
+
+    @property
+    def dofGeometry(self):
+        return self._dofGeometry 
+
+    def setStellSym(self, stellSym: bool):
+        if stellSym: 
+            self.surf.r.imIndex, self.surf.z.reIndex, self.surf.omega.reIndex = False, False, False
+        else:
+            self.surf.r.imIndex, self.surf.z.reIndex, self.surf.omega.reIndex = True, True, True
 
     def setIota(self, iota: float):
         self._iota = iota
 
     def setResolution(self, mpol: int, ntor: int):
         length = (2*ntor+1)*mpol + ntor + 1
-        _dof = {}
-        for dofkey in self.dofkeys:
-            _dof[dofkey] = [False for i in range(length)]
-            for index, constrain in enumerate(self.dof[dofkey]): 
+        _dofGeometry = {}
+        for dofName in ["rc", "zs", "omegas", "rs", "zc", "omegac"]:
+            _dofGeometry[dofName] = [False for _i in range(length)] 
+            for index, constrain in enumerate(self._dofGeometry[dofName]): 
                 m, n = self.indexReverseMap(index)
                 if abs(m) <= mpol and abs(n) <= ntor: 
-                    _dof[dofkey][ntor+(2*ntor+1)*(m-1)+(n+ntor+1)] = constrain 
-        self.dof = _dof
+                    _dofGeometry[dofName][ntor+(2*ntor+1)*(m-1)+(n+ntor+1)] = constrain 
+        self._dofGeometry = _dofGeometry
         self.mpol, self.ntor = mpol, ntor 
         self.surf.changeResolution(mpol=mpol, ntor=ntor) 
 
@@ -82,42 +105,42 @@ class VacuumSurface():
     def numsDOF(self): 
         nums = 0
         for key in self.dofkeys:
-            for dof in self.dof[key]:
+            for dof in self.dofGeometry[key]:
                 nums = nums + (dof)
         return nums
 
     def fixDOF(self, dof: str, m: int=0, n: int=0): 
-        if dof not in self.dof.keys():
+        if dof not in self.dofkeys:
             print("Incorrect Argument! ")
             return
         else:
-            self.dof[dof][self.indexMap(m,n)] = False
+            self._dofGeometry[dof][self.indexMap(m,n)] = False
 
     def freeDOF(self, dof: str, m: int=0, n: int=0): 
-        if dof not in self.dof.keys():
+        assert (m != 0) and (n != 0)
+        if dof not in self.dofkeys:
             print("Incorrect Argument! ")
             return
         else:
-            self.dof[dof][self.indexMap(m,n)] = True
+            self._dofGeometry[dof][self.indexMap(m,n)] = True
 
     def fixAll(self):
-        for dof in self.dofkeys:
-            for index, constain in enumerate(self.dof[dof]):
-                self.dof[dof][index] = False
+        for dofName in ["rc", "zs", "omegas", "rs", "zc", "omegac"]:
+            for index, constrain in enumerate(self._dofGeometry[dofName]): 
+                self._dofGeometry[dofName][index] = False
 
     def freeAll(self):
-        for dof in self.dofkeys:
-            for index, constain in enumerate(self.dof[dof]):
-                self.dof[dof][index] = True
-        self.dof["omegas"][0] = False
-        if not self.stemSym:
-            self.dof["omegac"][0] = False 
+        for dofName in ["rc", "zs", "omegas", "rs", "zc", "omegac"]:
+            for index, constrain in enumerate(self._dofGeometry[dofName]): 
+                if index != 0:
+                    self._dofGeometry[dofName][index] = True
 
-    def setValue_DOF(self, dofValue: np.ndarray) -> None:
-        valueIndex = 0
+    def unpackDOF(self, dofValue: np.ndarray) -> None:
+        assert dofValue.size == self.numsDOF+self.freeIota
+        valueIndex = 0 
         while valueIndex < self.numsDOF:
             for dofkey in self.dofkeys:
-                for dofIndex, dof in enumerate(self.dof[dofkey]): 
+                for dofIndex, dof in enumerate(self.dofGeometry[dofkey]): 
                     if dof:
                         m, n = self.indexReverseMap(dofIndex)
                         if dofkey == "rc": 
@@ -158,7 +181,7 @@ class VacuumSurface():
         valueIndex = 0
         while valueIndex < self.numsDOF:
             for dofkey in self.dofkeys:
-                for dofIndex, dof in enumerate(self.dof[dofkey]): 
+                for dofIndex, dof in enumerate(self.dofGeometry[dofkey]): 
                     if dof:
                         m, n = self.indexReverseMap(dofIndex)
                         if dofkey == "rc": 
