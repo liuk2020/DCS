@@ -42,7 +42,8 @@ class QsSurface(VacuumSurface):
 
     def solve(self, 
         mode: str="biobject", 
-        log: str="log.txt", 
+        logfile: str="log.txt", 
+        logscreen: bool=True, 
         weight: List=[0.99, 0.01], 
         muInit: float = 99.0,
         vmecinput: str="vacuum", 
@@ -53,16 +54,19 @@ class QsSurface(VacuumSurface):
         # log #########################################################################################
         logger = logging.getLogger('my logger')
         logger.setLevel(logging.DEBUG)
-        fh = logging.FileHandler(log, mode='w', encoding='utf-8')
-        sh = logging.StreamHandler()
+        fh = logging.FileHandler(logfile, mode='w', encoding='utf-8')
         fmt = logging.Formatter(fmt = "%(asctime)s  - %(message)s")
         fh.setFormatter(fmt)
-        sh.setFormatter(fmt)
         logger.addHandler(fh)
-        logger.addHandler(sh)
         fh.setLevel(logging.INFO)
-        sh.setLevel(logging.INFO)
+        if logscreen:
+            sh = logging.StreamHandler() 
+            sh.setFormatter(fmt)
+            logger.addHandler(sh)
+            sh.setLevel(logging.INFO)
         # solver ######################################################################################
+        if kwargs.get("method") == None: 
+            kwargs.update({"method": "CG"})
         if mode == "biobject": 
             self.solve_biobject(logger, weight, **kwargs)
         elif mode == "Lagrange" or mode == "lagrange":
@@ -136,22 +140,22 @@ class QsSurface(VacuumSurface):
             return costF, costG
         def cost(dofs): 
             costF, costG = precost(dofs)
-            return dofs[-1]*costF + costG
+            return (dofs[-1]*costF+costG) / (dofs[-1]+1)
         self.niter = 0 
         def callbackFun(xi):
             self.niter += 1 
             if self.niter%10 == 0:
                 costF, costG = precost(xi)
-                ans = xi[-1]*costF + costG
+                ans = (xi[-1]*costF + costG) / (xi[-1]+1)
                 logger.info("{:>8d} {:>14e} {:>14e} {:>14e} {:>14e} {:>14e}".format(self.niter, costF, costG, self.iota, xi[-1], ans))
         _costF, _costG = precost(np.append(self.initValue_DOF,muInit))
-        _ans = muInit*_costF + _costG
+        _ans = (muInit*_costF+_costG) / (muInit+1)
         logger.info("{:>8} {:>14} {:>14} {:>14} {:>14} {:>14}".format('niter', 'fFun', 'gFun', 'iota', 'mu', 'costFunction')) 
         logger.info("{:>8d} {:>14e} {:>14e} {:>14e} {:>14e} {:>14e}".format(0, _costF, _costG, self.iota, muInit, _ans)) 
         res = minimize(cost, np.append(self.initValue_DOF,muInit), callback=callbackFun, **kwargs)
         # self.unpackDOF(res.x)
         _costF, _costG = precost(res.x)
-        _ans = res.x[-1]*_costF + _costG 
+        _ans = (res.x[-1]*_costF+_costG) / (res.x[-1]+1)
         logger.info("{:>8d} {:>14e} {:>14e} {:>14e} {:>14e} {:>14e}".format(self.niter, _costF, _costG, self.iota, res.x[-1], _ans)) 
 
 

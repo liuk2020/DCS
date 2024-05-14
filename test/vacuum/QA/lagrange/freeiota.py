@@ -16,7 +16,7 @@ qsProblem.fixDOF('rc', m=1, n=0)
 qsProblem.fixDOF('zs', m=1, n=0)
 
 qsProblem.solve(
-    mode = "biobject",
+    mode = "lagrange",
     logfile = "freeiota.txt", 
     vmecinput = "freeiota", 
     surfH5 = "freeiota", 

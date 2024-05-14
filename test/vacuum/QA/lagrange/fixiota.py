@@ -11,14 +11,15 @@ qsProblem.surf.z.setIm(1, 0, 0.2)
 qsProblem.surf.r.setRe(1, 1, 0.05)
 qsProblem.surf.z.setIm(1, 1, 0.05)
 qsProblem.freeAll()
-qsProblem.freeIota = True
+qsProblem.freeIota = False
 qsProblem.fixDOF('rc', m=1, n=0)
 qsProblem.fixDOF('zs', m=1, n=0)
 
+
 qsProblem.solve(
-    mode = "biobject",
-    logfile = "freeiota.txt", 
-    vmecinput = "freeiota", 
-    surfH5 = "freeiota", 
-    figname = "freeiota",
+    mode = "lagrange",
+    logfile = "fixiota.txt", 
+    vmecinput = "fixiota", 
+    surfH5 = "fixiota", 
+    figname = "fixiota"
 )

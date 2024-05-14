@@ -40,8 +40,6 @@ class Surface_BoozerAngle(Surface):
         self.reverseOmegaAngle = reverseOmegaAngle
 
     def changeResolution(self, mpol: int, ntor: int): 
-        self.mpol = mpol
-        self.ntor = ntor
         self.r = changeResolution(self.r, mpol, ntor)
         self.z = changeResolution(self.z, mpol, ntor)
         self.omega = changeResolution(self.omega, mpol, ntor)

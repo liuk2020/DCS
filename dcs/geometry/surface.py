@@ -14,11 +14,20 @@ class Surface:
         assert r.nfp == z.nfp
         assert r.mpol == z.mpol
         assert r.ntor == z.ntor
-        self.nfp = r.nfp 
-        self.mpol = r.mpol
-        self.ntor = r.ntor
         self.r = r
         self.z = z
+
+    @property
+    def nfp(self) -> int:
+        return self.r.nfp 
+
+    @property
+    def mpol(self) -> int:
+        return self.r.mpol 
+
+    @property
+    def ntor(self) -> int: 
+        return self.r.ntor 
 
     @property
     def dRdTheta(self) -> ToroidalField:
@@ -37,8 +46,6 @@ class Surface:
         return derivateTor(self.z) 
 
     def changeResolution(self, mpol: int, ntor: int): 
-        self.mpol = mpol
-        self.ntor = ntor
         self.r = changeResolution(self.r, mpol, ntor)
         self.z = changeResolution(self.z, mpol, ntor)
 

@@ -24,22 +24,17 @@ class VacuumSurface():
             self._init_surf()
         else: 
             self.surf = surf
-            self.nfp = surf.r.nfp
-            self.mpol = surf.r.mpol
-            self.ntor = surf.r.ntor
         self._iota = iota
         self.freeIota = freeIota
         self.setStellSym(stellSym)
         self._initDOF()
 
     def _init_surf(self): 
-        self.nfp = 3
-        self.mpol = 2
-        self.ntor = 2
+        nfp, mpol, ntor = 3, 2, 2
         self.surf = Surface_BoozerAngle(
-            r = ToroidalField.constantField(1, nfp=self.nfp, mpol=self.mpol, ntor=self.ntor), 
-            z = ToroidalField.constantField(0, nfp=self.nfp, mpol=self.mpol, ntor=self.ntor), 
-            omega = ToroidalField.constantField(0, nfp=self.nfp, mpol=self.mpol, ntor=self.ntor)
+            r = ToroidalField.constantField(1, nfp=nfp, mpol=mpol, ntor=ntor), 
+            z = ToroidalField.constantField(0, nfp=nfp, mpol=mpol, ntor=ntor), 
+            omega = ToroidalField.constantField(0, nfp=nfp, mpol=mpol, ntor=ntor)
         )
         self.surf.r.reIndex, self.surf.r.imIndex = True, True 
         self.surf.z.reIndex, self.surf.z.imIndex = True, True 
@@ -52,6 +47,18 @@ class VacuumSurface():
         self._dofGeometry = {}
         for index in ["rc", "zs", "omegas", "rs", "zc", "omegac"]:
             self._dofGeometry[index] = [False for i in range(length)] 
+
+    @property
+    def nfp(self) -> int:
+        return self.surf.nfp 
+
+    @property
+    def mpol(self) -> int:
+        return self.surf.mpol 
+
+    @property
+    def ntor(self) -> int: 
+        return self.surf.ntor 
 
     @property
     def stellSym(self) -> bool:
@@ -92,11 +99,9 @@ class VacuumSurface():
                 if abs(m) <= mpol and abs(n) <= ntor: 
                     _dofGeometry[dofName][ntor+(2*ntor+1)*(m-1)+(n+ntor+1)] = constrain 
         self._dofGeometry = _dofGeometry
-        self.mpol, self.ntor = mpol, ntor 
         self.surf.changeResolution(mpol=mpol, ntor=ntor) 
 
     def setNfp(self, nfp: int):
-        self.nfp = nfp
         self.surf.r.nfp = nfp
         self.surf.z.nfp = nfp
         self.surf.omega.nfp = nfp

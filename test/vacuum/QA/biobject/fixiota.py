@@ -2,7 +2,7 @@ from dcs.vacuum import QsSurface
 
 
 qsProblem = QsSurface()
-qsProblem.setResolution(mpol=5, ntor=5)
+qsProblem.setResolution(mpol=4, ntor=4)
 qsProblem.setNfp(nfp=2)
 qsProblem.setIota(0.4158)
 qsProblem.surf.r.setRe(0, 0, 1)
@@ -18,7 +18,7 @@ qsProblem.fixDOF('zs', m=1, n=0)
 
 qsProblem.solve(
     mode = "biobject",
-    log = "fixiota.txt", 
+    logfile = "fixiota.txt", 
     vmecinput = "fixiota", 
     surfH5 = "fixiota", 
     figname = "fixiota"
