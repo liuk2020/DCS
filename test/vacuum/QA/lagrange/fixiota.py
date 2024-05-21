@@ -20,6 +20,6 @@ qsProblem.solve(
     mode = "lagrange",
     logfile = "fixiota.txt", 
     vmecinput = "fixiota", 
-    surfH5 = "fixiota", 
+    surfName = "fixiota", 
     figname = "fixiota"
 )

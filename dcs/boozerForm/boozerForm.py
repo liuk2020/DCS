@@ -66,6 +66,32 @@ class BoozerForm(Booz_xform):
         )
         return Surface_BoozerAngle(_rfield, _zfield, _omegafield, reverseToroidalAngle=reverseToroidal, reverseOmegaAngle=reverseOmegaAngle) 
 
+    def getB(self, surfaceIndex: int=-1, asym: bool=True) -> ToroidalField:
+        """
+        returns: 
+            B
+        """
+        nfp = int(self.nfp)
+        mpol = int(self.mboz) - 1
+        ntor = int(self.nboz) 
+        bmnc = self.bmnc_b[:, surfaceIndex].copy()
+        if not asym: 
+            bmns = self.bmns_b[:, surfaceIndex].copy()
+        else: 
+            bmns = np.zeros_like(bmnc)
+        bmnc[1:-1] = bmnc[1:-1] / 2
+        bmns[1:-1] = bmns[1:-1] / 2
+        _bfield = ToroidalField(
+            nfp = nfp, 
+            mpol = mpol, 
+            ntor = ntor,
+            reArr = bmnc, 
+            imArr = -bmns, 
+            reIndex = True, 
+            imIndex = not asym
+        ) 
+        return _bfield 
+
     def getIota(self, surfaceIndex: int=-1):
         return self.iota[surfaceIndex]
 

@@ -19,6 +19,6 @@ qsProblem.solve(
     mode = "biobject",
     logfile = "freeiota.txt", 
     vmecinput = "freeiota", 
-    surfH5 = "freeiota", 
+    surfName = "freeiota", 
     figname = "freeiota",
 )

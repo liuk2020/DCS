@@ -16,16 +16,12 @@ class VacuumSurface():
 
     def __init__(self, 
         surf: Surface_BoozerAngle=None, 
-        iota: float=0.618, 
-        freeIota: bool = False, 
         stellSym: bool = True
     ) -> None:
         if surf is None:
             self._init_surf()
         else: 
             self.surf = surf
-        self._iota = iota
-        self.freeIota = freeIota
         self.setStellSym(stellSym)
         self._initDOF()
 
@@ -65,10 +61,6 @@ class VacuumSurface():
         return (not self.surf.r.imIndex) and (not self.surf.z.reIndex) and (not self.surf.omega.reIndex)
 
     @property
-    def iota(self):
-        return self._iota
-
-    @property
     def dofkeys(self):
         if self.stellSym:
             _dofkeys = ["rc", "zs", "omegas"]
@@ -80,14 +72,14 @@ class VacuumSurface():
     def dofGeometry(self):
         return self._dofGeometry 
 
+    def getIota(self, g_thetazeta: ToroidalField, g_thetatheta: ToroidalField) -> float:
+        return - g_thetazeta.getRe(0, 0) / g_thetatheta.getRe(0, 0)
+
     def setStellSym(self, stellSym: bool):
         if stellSym: 
             self.surf.r.imIndex, self.surf.z.reIndex, self.surf.omega.reIndex = False, False, False
         else:
             self.surf.r.imIndex, self.surf.z.reIndex, self.surf.omega.reIndex = True, True, True
-
-    def setIota(self, iota: float):
-        self._iota = iota
 
     def setResolution(self, mpol: int, ntor: int):
         length = (2*ntor+1)*mpol + ntor + 1
@@ -141,7 +133,7 @@ class VacuumSurface():
                     self._dofGeometry[dofName][index] = True
 
     def unpackDOF(self, dofValue: np.ndarray) -> None:
-        assert dofValue.size == self.numsDOF+self.freeIota
+        assert dofValue.size == self.numsDOF
         valueIndex = 0 
         while valueIndex < self.numsDOF:
             for dofkey in self.dofkeys:
@@ -176,13 +168,11 @@ class VacuumSurface():
                             continue
                     else: 
                         continue
-        if self.freeIota:
-            self.setIota(dofValue[-1])
         return 
 
     @property
     def initValue_DOF(self) -> np.ndarray:
-        initValue = np.zeros(self.numsDOF+self.freeIota) 
+        initValue = np.zeros(self.numsDOF) 
         valueIndex = 0
         while valueIndex < self.numsDOF:
             for dofkey in self.dofkeys:
@@ -217,8 +207,6 @@ class VacuumSurface():
                             continue
                     else: 
                         continue
-        if self.freeIota:
-            initValue[-1] = self.iota
         return initValue
 
     def indexMap(self, m: int, n: int) -> int:
