@@ -31,8 +31,8 @@ class QsSurface(VacuumSurface):
         gFun = self.g_zetazeta + self.g_thetazeta*targetIota
         return fFun, gFun
 
-    def funResidual(self) -> Tuple[ToroidalField]:
-        fFun, gFun = self.funValue()
+    def funResidual(self, targetIota) -> Tuple[ToroidalField]:
+        fFun, gFun = self.funValue(targetIota)
         if self.n == 0: 
             deriGfun = derivateTor(gFun)
         elif self.m == 0:
