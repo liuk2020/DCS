@@ -24,6 +24,7 @@ class VacuumSurface():
             self.surf = surf
         self.setStellSym(stellSym)
         self._initDOF()
+        self._init_paras()
 
     def _init_surf(self): 
         nfp, mpol, ntor = 3, 2, 2
@@ -37,6 +38,9 @@ class VacuumSurface():
         self.surf.omega.reIndex, self.surf.omega.imIndex = True, True
         self.surf.r.setRe(1, 0, 0.2)
         self.surf.z.setIm(1, 0, 0.2)
+
+    def _init_paras(self): 
+        self._powerIndex = 1.5
 
     def _initDOF(self):
         length = (2*self.ntor+1)*self.mpol + self.ntor + 1
@@ -140,28 +144,29 @@ class VacuumSurface():
                 for dofIndex, dof in enumerate(self.dofGeometry[dofkey]): 
                     if dof:
                         m, n = self.indexReverseMap(dofIndex)
+                        value = dofValue[valueIndex] / pow(self._powerIndex,abs(m)+abs(n))
                         if dofkey == "rc": 
-                            self.surf.r.setRe(m, n, dofValue[valueIndex])
+                            self.surf.r.setRe(m, n, value)
                             valueIndex += 1
                             continue
                         elif dofkey == "zs": 
-                            self.surf.z.setIm(m, n, dofValue[valueIndex])
+                            self.surf.z.setIm(m, n, value)
                             valueIndex += 1
                             continue
                         elif dofkey == "omegas":
-                            self.surf.omega.setIm(m, n, dofValue[valueIndex])
+                            self.surf.omega.setIm(m, n, value)
                             valueIndex += 1 
                             continue
                         elif dofkey == "rs": 
-                            self.surf.r.setIm(m, n, dofValue[valueIndex])
+                            self.surf.r.setIm(m, n, value)
                             valueIndex += 1
                             continue
                         elif dofkey == "zc": 
-                            self.surf.z.setRe(m, n, dofValue[valueIndex])
+                            self.surf.z.setRe(m, n, value)
                             valueIndex += 1
                             continue
                         elif dofkey == "omegac": 
-                            self.surf.omega.setRe(m, n, dofValue[valueIndex])
+                            self.surf.omega.setRe(m, n, value)
                             valueIndex += 1
                             continue
                         else: 
@@ -180,27 +185,27 @@ class VacuumSurface():
                     if dof:
                         m, n = self.indexReverseMap(dofIndex)
                         if dofkey == "rc": 
-                            initValue[valueIndex] = self.surf.r.getRe(m,n)
+                            initValue[valueIndex] = self.surf.r.getRe(m,n) * pow(self._powerIndex,abs(m)+abs(n))
                             valueIndex += 1
                             continue
                         elif dofkey == "zs": 
-                            initValue[valueIndex] = self.surf.z.getIm(m,n)
+                            initValue[valueIndex] = self.surf.z.getIm(m,n) * pow(self._powerIndex,abs(m)+abs(n))
                             valueIndex += 1
                             continue
                         elif dofkey == "omegas":
-                            initValue[valueIndex] = self.surf.omega.getIm(m,n)
+                            initValue[valueIndex] = self.surf.omega.getIm(m,n) * pow(self._powerIndex,abs(m)+abs(n))
                             valueIndex += 1 
                             continue
                         elif dofkey == "rs": 
-                            initValue[valueIndex] = self.surf.r.getIm(m,n)
+                            initValue[valueIndex] = self.surf.r.getIm(m,n) * pow(self._powerIndex,abs(m)+abs(n))
                             valueIndex += 1
                             continue
                         elif dofkey == "zc": 
-                            initValue[valueIndex] = self.surf.z.getRe(m,n)
+                            initValue[valueIndex] = self.surf.z.getRe(m,n) * pow(self._powerIndex,abs(m)+abs(n))
                             valueIndex += 1
                             continue
                         elif dofkey == "omegac": 
-                            initValue[valueIndex] = self.surf.omega.getRe(m,n)
+                            initValue[valueIndex] = self.surf.omega.getRe(m,n) * pow(self._powerIndex,abs(m)+abs(n))
                             valueIndex += 1
                             continue
                         else: 
