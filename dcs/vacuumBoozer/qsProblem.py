@@ -19,20 +19,19 @@ class QsSurface(VacuumSurface):
         $$ B = B(m\theta - nN_f\zeta)$$
     """
 
-    def __init__(self, surf: Surface_BoozerAngle = None, m: int=1, n: int=0, stemSym: bool = True) -> None:
-        super().__init__(surf, stemSym)
+    def __init__(self, surf: Surface_BoozerAngle = None, iota: float=0.618, iotafree: bool=True, m: int=1, n: int=0, stemSym: bool = True) -> None:
+        super().__init__(surf, iota, iotafree, stemSym)
         self.m = m
         self.n = n
 
-    def funValue(self, targetIota: float) -> Tuple[ToroidalField]:
+    def funValue(self) -> Tuple[ToroidalField]:
         self.g_thetatheta, self.g_thetazeta, self.g_zetazeta = self.surf.metric
-        self.iota = self.getIota(self.g_thetazeta, self.g_thetatheta)
-        fFun = self.g_thetazeta + self.g_thetatheta*targetIota
-        gFun = self.g_zetazeta + self.g_thetazeta*targetIota
+        fFun = self.g_thetazeta + self.g_thetatheta*self.iota
+        gFun = self.g_zetazeta + self.g_thetazeta*self.iota
         return fFun, gFun
 
-    def funResidual(self, targetIota) -> Tuple[ToroidalField]:
-        fFun, gFun = self.funValue(targetIota)
+    def funResidual(self) -> Tuple[ToroidalField]:
+        fFun, gFun = self.funValue()
         if self.n == 0: 
             deriGfun = derivateTor(gFun)
         elif self.m == 0:
@@ -42,7 +41,6 @@ class QsSurface(VacuumSurface):
         return fFun, gFun, deriGfun
 
     def solve(self, 
-        targetIota: float=0.309, 
         mode: str="biobject", 
         logfile: str="log.txt", 
         logscreen: bool=True, 
@@ -66,12 +64,12 @@ class QsSurface(VacuumSurface):
             logger.addHandler(sh)
             sh.setLevel(logging.INFO)
         # solver ######################################################################################
-        if kwargs.get("method") == None: 
-            kwargs.update({"method": "CG"})
+        # if kwargs.get("method") == None: 
+        #     kwargs.update({"method": "BFGS"})
         if mode == "biobject": 
-            self.solve_biobject(targetIota, logger, weight, **kwargs)
+            self.solve_biobject(logger, weight, **kwargs)
         elif mode == "Lagrange" or mode == "lagrange":
-            self.solve_Lagrange(targetIota, logger, **kwargs)
+            self.solve_Lagrange(logger, **kwargs)
         else:
             logger.error("Incorrect Mode! ")
         # vmec input ###################################################################################
@@ -91,7 +89,7 @@ class QsSurface(VacuumSurface):
                 matplotlib.rcParams['text.usetex'] = True
             except:
                 pass
-            fFun, gFun, gResidual = self.funResidual(targetIota)
+            fFun, gFun, gResidual = self.funResidual()
             fig, ax = plt.subplots()
             _ = fFun.plot_plt(fig=fig, ax=ax)
             fig.tight_layout()
@@ -105,32 +103,33 @@ class QsSurface(VacuumSurface):
             fig.tight_layout()
             fig.savefig("gDeri_"+figname+".jpg")
 
-    def solve_biobject(self, targetIota, logger, weight: List[float], **kwargs):
+    def solve_biobject(self, logger, weight: List[float], **kwargs):
         def precost(dofs):
             self.unpackDOF(dofs)
-            fFun, gFun, deriGfun = self.funResidual(targetIota)
+            fFun, gFun, deriGfun = self.funResidual()
             normalizeGDeri = deriGfun * (1/gFun.getRe(0,0))
             costF = np.linalg.norm(np.hstack((fFun.reArr, fFun.imArr))) 
             costG = np.linalg.norm(np.hstack((normalizeGDeri.reArr, normalizeGDeri.imArr)))
             return costF, costG
         def cost(dofs): 
             costF, costG = precost(dofs)
-            return weight[0]*costF + weight[1]*costG
+            return (weight[0]*costF+weight[1]*costG) / (weight[0]+weight[1])
         self.niter = 0 
         def callbackFun(xi):
             self.niter += 1 
             if self.niter%10 == 0:
                 costF, costG = precost(xi)
-                ans = weight[0]*costF + weight[1]*costG
+                ans = (weight[0]*costF+weight[1]*costG) / (weight[0]+weight[1])
                 logger.info("{:>8d} {:>16e} {:>16e} {:>16e} {:>16e}".format(self.niter, costF, costG, self.iota, ans))
         _costF, _costG = precost(self.initValue_DOF)
-        _ans = weight[0]*_costF + weight[1]*_costG
-        logger.info("{:>8} {:>16} {:>16} {:>16} {:>16}".format('niter', 'fFun', 'gFun', '-<g_uv>/<g_uu>', 'costFunction')) 
+        _ans = (weight[0]*_costF+weight[1]*_costG) / (weight[0]+weight[1])
+        logger.info("{:>8} {:>16} {:>16} {:>16} {:>16}".format('niter', 'fFun', 'gFun', 'iota', 'costFunction')) 
         logger.info("{:>8d} {:>16e} {:>16e} {:>16e} {:>16e}".format(0, _costF, _costG, self.iota, _ans)) 
         res = minimize(cost, self.initValue_DOF, callback=callbackFun, **kwargs)
         _costF, _costG = precost(res.x)
-        _ans = weight[0]*_costF + weight[1]*_costG
-        logger.info("{:>8d} {:>16e} {:>16e} {:>16e} {:>16e}".format(self.niter, _costF, _costG, self.iota, _ans)) 
+        _ans = (weight[0]*_costF+weight[1]*_costG) / (weight[0]+weight[1])
+        if self.niter != 0 and self.niter%10 != 0: 
+            logger.info("{:>8d} {:>16e} {:>16e} {:>16e} {:>16e}".format(self.niter, _costF, _costG, self.iota, _ans)) 
         
     def solve_Lagrange(self, targetIota, logger, muInit: float=99.0, **kwargs): 
         def precost(dofs):
@@ -152,7 +151,7 @@ class QsSurface(VacuumSurface):
                 logger.info("{:>8d} {:>16e} {:>16e} {:>16e} {:>16e} {:>16e}".format(self.niter, costF, costG, self.iota, xi[-1], ans))
         _costF, _costG = precost(np.append(self.initValue_DOF,muInit))
         _ans = (muInit*_costF+_costG) / (muInit+1)
-        logger.info("{:>8} {:>16} {:>16} {:>16} {:>16} {:>16}".format('niter', 'fFun', 'gFun', '-<g_uv>/<g_uu>', 'mu', 'costFunction')) 
+        logger.info("{:>8} {:>16} {:>16} {:>16} {:>16} {:>16}".format('niter', 'fFun', 'gFun', 'iota', 'mu', 'costFunction')) 
         logger.info("{:>8d} {:>16e} {:>16e} {:>16e} {:>16e} {:>16e}".format(0, _costF, _costG, self.iota, muInit, _ans)) 
         res = minimize(cost, np.append(self.initValue_DOF,muInit), callback=callbackFun, **kwargs)
         # self.unpackDOF(res.x)

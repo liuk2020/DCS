@@ -16,12 +16,16 @@ class VacuumSurface():
 
     def __init__(self, 
         surf: Surface_BoozerAngle=None, 
+        iota : float=0.618, 
+        iotafree: bool=True, 
         stellSym: bool = True
     ) -> None:
         if surf is None:
             self._init_surf()
         else: 
             self.surf = surf
+        self.iota = iota
+        self.iotafree = iotafree
         self.setStellSym(stellSym)
         self._initDOF()
         self._init_paras()
@@ -40,7 +44,7 @@ class VacuumSurface():
         self.surf.z.setIm(1, 0, 0.2)
 
     def _init_paras(self): 
-        self._powerIndex = 1.5
+        self._powerIndex = 1.25
 
     def _initDOF(self):
         length = (2*self.ntor+1)*self.mpol + self.ntor + 1
@@ -76,9 +80,6 @@ class VacuumSurface():
     def dofGeometry(self):
         return self._dofGeometry 
 
-    def getIota(self, g_thetazeta: ToroidalField, g_thetatheta: ToroidalField) -> float:
-        return - g_thetazeta.getRe(0, 0) / g_thetatheta.getRe(0, 0)
-
     def setStellSym(self, stellSym: bool):
         if stellSym: 
             self.surf.r.imIndex, self.surf.z.reIndex, self.surf.omega.reIndex = False, False, False
@@ -101,6 +102,9 @@ class VacuumSurface():
         self.surf.r.nfp = nfp
         self.surf.z.nfp = nfp
         self.surf.omega.nfp = nfp
+
+    def setIota(self, iota: float):
+        self.iota = iota
     
     @property
     def numsDOF(self): 
@@ -125,6 +129,33 @@ class VacuumSurface():
         else:
             self._dofGeometry[dof][self.indexMap(m,n)] = True
 
+    def fixAll_rc(self):
+        for index, constrain in enumerate(self._dofGeometry['rc']): 
+            self._dofGeometry['rc'][index] = False
+
+    def fixAll_zs(self):
+        for index, constrain in enumerate(self._dofGeometry['zs']): 
+            self._dofGeometry['zs'][index] = False
+
+    def fixAll_omegas(self):
+        for index, constrain in enumerate(self._dofGeometry['omegas']): 
+            self._dofGeometry['omegas'][index] = False
+
+    def freeAll_rc(self):
+        for index, constrain in enumerate(self._dofGeometry['rc']): 
+            if index != 0:
+                self._dofGeometry['rc'][index] = True
+    
+    def freeAll_zs(self):
+        for index, constrain in enumerate(self._dofGeometry['zs']): 
+            if index != 0:
+                self._dofGeometry['zs'][index] = True
+
+    def freeAll_omegas(self):
+        for index, constrain in enumerate(self._dofGeometry['omegas']): 
+            if index != 0:
+                self._dofGeometry['omegas'][index] = True
+
     def fixAll(self):
         for dofName in ["rc", "zs", "omegas", "rs", "zc", "omegac"]:
             for index, constrain in enumerate(self._dofGeometry[dofName]): 
@@ -137,7 +168,7 @@ class VacuumSurface():
                     self._dofGeometry[dofName][index] = True
 
     def unpackDOF(self, dofValue: np.ndarray) -> None:
-        assert dofValue.size == self.numsDOF
+        assert dofValue.size == self.numsDOF+self.iotafree
         valueIndex = 0 
         while valueIndex < self.numsDOF:
             for dofkey in self.dofkeys:
@@ -173,11 +204,13 @@ class VacuumSurface():
                             continue
                     else: 
                         continue
+        if self.iotafree:
+            self.setIota(dofValue[-1])
         return 
 
     @property
     def initValue_DOF(self) -> np.ndarray:
-        initValue = np.zeros(self.numsDOF) 
+        initValue = np.zeros(self.numsDOF+self.iotafree) 
         valueIndex = 0
         while valueIndex < self.numsDOF:
             for dofkey in self.dofkeys:
@@ -212,6 +245,8 @@ class VacuumSurface():
                             continue
                     else: 
                         continue
+        if self.iotafree:
+            initValue[-1] = self.iota
         return initValue
 
     def indexMap(self, m: int, n: int) -> int:
