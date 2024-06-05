@@ -17,6 +17,17 @@ class Surface_cylindricalAngle(Surface):
         self.reverseToroidalAngle = reverseToroidalAngle 
 
     @property
+    def stellSym(self) -> bool:
+        return (not self.r.imIndex) and (not self.z.reIndex) 
+
+    def changeStellSym(self, stellSym: bool) -> None: 
+        self.r.reIndex, self.z.imIndex = True, True 
+        if stellSym: 
+            self.r.imIndex, self.z.reIndex = False, False 
+        else: 
+            self.r.imIndex, self.z.reIndex = True, True 
+
+    @property
     def metric(self):
         g_thetatheta = self.dRdTheta*self.dRdTheta + self.dZdTheta*self.dZdTheta
         g_thetazeta = self.dRdTheta*self.dRdZeta + self.dZdTheta*self.dZdZeta
