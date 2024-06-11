@@ -30,11 +30,14 @@ class ToroidalField:
         self.ntor = ntor
         self._reArr = reArr
         self._imArr = imArr
-        self.arrlen = (2*ntor+1)*mpol+ntor+1
         assert reIndex or imIndex
         self.reIndex = reIndex
         self.imIndex = imIndex
-    
+
+    @property
+    def arrlen(self) -> int: 
+        return (2*self.ntor+1)*self.mpol+self.ntor+1 
+
     @property
     def reArr(self) -> np.ndarray:
         if not self.reIndex:
@@ -194,44 +197,94 @@ class ToroidalField:
     def __add__(self, other):
         if isinstance(other, ToroidalField):
             assert self.nfp == other.nfp
-            assert self.mpol == other.mpol
-            assert self.ntor == other.ntor
-            return ToroidalField(
-                nfp = self.nfp, 
-                mpol = self.mpol, 
-                ntor = self.ntor,
-                reArr = self.reArr + other.reArr, 
-                imArr = self.imArr + other.imArr, 
-                reIndex = self.reIndex or other.reIndex, 
-                imIndex = self.imIndex or other.imIndex
-            )
+            if self.mpol==other.mpol and self.ntor==other.ntor: 
+                return ToroidalField(
+                    nfp = self.nfp, 
+                    mpol = self.mpol, 
+                    ntor = self.ntor,
+                    reArr = self.reArr + other.reArr, 
+                    imArr = self.imArr + other.imArr, 
+                    reIndex = self.reIndex or other.reIndex, 
+                    imIndex = self.imIndex or other.imIndex
+                )
+            else:
+                _mpol = max(self.mpol, other.mpol) 
+                _ntor = max(self.ntor, other.ntor) 
+                _reArr = np.zeros((2*_ntor+1)*_mpol+_ntor+1) 
+                _imArr = np.zeros((2*_ntor+1)*_mpol+_ntor+1) 
+                _field = ToroidalField(
+                    nfp = self.nfp, 
+                    mpol = _mpol, 
+                    ntor = _ntor, 
+                    reArr = _reArr, 
+                    imArr = _imArr, 
+                    reIndex = self.reIndex or other.reIndex, 
+                    imIndex = self.imIndex or other.imIndex
+                )
+                for index in range(_field.arrlen): 
+                    m, n = _field.indexReverseMap(index)
+                    _field.setRe(m, n, self.getRe(m,n)+other.getRe(m,n)) 
+                    _field.setIm(m, n, self.getIm(m,n)+other.getIm(m,n)) 
+                return _field
         else:
             _reArr = np.zeros_like(self.reArr) + self.reArr
             _reArr[0] = _reArr[0] + other
             return ToroidalField(
                 nfp = self.nfp, 
                 mpol = self.mpol, 
-                ntor = self.ntor,
+                ntor = self.ntor, 
                 reArr = _reArr, 
                 imArr = self.imArr, 
                 reIndex = self.reIndex, 
                 imIndex = self.imIndex
             )
 
+    def __radd__(self, other): 
+        _reArr = np.zeros_like(self.reArr) + self.reArr 
+        _imArr = np.zeros_like(self.imArr) + self.imArr
+        _reArr[0] = _reArr[0] + other
+        return ToroidalField(
+            nfp = self.nfp, 
+            mpol = self.mpol, 
+            ntor = self.ntor,
+            reArr = _reArr, 
+            imArr = _imArr, 
+            reIndex = self.reIndex, 
+            imIndex = self.imIndex
+        )
+
     def __sub__(self, other):
         if isinstance(other, ToroidalField):
             assert self.nfp == other.nfp
-            assert self.mpol == other.mpol
-            assert self.ntor == other.ntor
-            return ToroidalField(
-                nfp = self.nfp, 
-                mpol = self.mpol, 
-                ntor = self.ntor,
-                reArr = self.reArr - other.reArr, 
-                imArr = self.imArr - other.imArr, 
-                reIndex = self.reIndex or other.reIndex, 
-                imIndex = self.imIndex or other.imIndex
-            )
+            if self.mpol==other.mpol and self.ntor==other.ntor: 
+                return ToroidalField(
+                    nfp = self.nfp, 
+                    mpol = self.mpol, 
+                    ntor = self.ntor,
+                    reArr = self.reArr - other.reArr, 
+                    imArr = self.imArr - other.imArr, 
+                    reIndex = self.reIndex or other.reIndex, 
+                    imIndex = self.imIndex or other.imIndex
+                )
+            else:
+                _mpol = max(self.mpol, other.mpol) 
+                _ntor = max(self.ntor, other.ntor) 
+                _reArr = np.zeros((2*_ntor+1)*_mpol+_ntor+1) 
+                _imArr = np.zeros((2*_ntor+1)*_mpol+_ntor+1) 
+                _field = ToroidalField(
+                    nfp = self.nfp, 
+                    mpol = _mpol, 
+                    ntor = _ntor, 
+                    reArr = _reArr, 
+                    imArr = _imArr, 
+                    reIndex = self.reIndex or other.reIndex, 
+                    imIndex = self.imIndex or other.imIndex
+                )
+                for index in range(_field.arrlen): 
+                    m, n = _field.indexReverseMap(index)
+                    _field.setRe(m, n, self.getRe(m,n)-other.getRe(m,n)) 
+                    _field.setIm(m, n, self.getIm(m,n)-other.getIm(m,n)) 
+                return _field
         else:
             _reArr = np.zeros_like(self.reArr) + self.reArr
             _reArr[0] = _reArr[0] - other
@@ -245,73 +298,34 @@ class ToroidalField:
                 imIndex = self.imIndex
             )
 
-    # def __mul__(self, other):
-    #     if isinstance(other, ToroidalField):
-    #         assert self.nfp == other.nfp
-    #         mpol, ntor = self.mpol, self.ntor
-    #         nums = (2*ntor+1)*mpol+ntor+1
-    #         reArr, imArr = np.zeros(nums), np.zeros(nums)
-    #         # for i in range(nums):
-    #         #     m, n = self.indexReverseMap(i)
-    #         #     for _m in range(-mpol, mpol+1):
-    #         #         for _n in range(-ntor, ntor+1):
-    #         #             reArr[i] += (
-    #         #                 self.getRe(_m,_n)*other.getRe(m-_m,n-_n) - 
-    #         #                 self.getIm(_m,_n)*other.getIm(m-_m,n-_n)
-    #         #             )
-    #         #             imArr[i] += (
-    #         #                 self.getRe(_m,_n)*other.getIm(m-_m,n-_n) + 
-    #         #                 self.getIm(_m,_n)*other.getRe(m-_m,n-_n)
-    #         #             )
-    #         ##### stellarator symmetry 
-    #         for i in range(nums):
-    #             m, n = self.indexReverseMap(i)
-    #             for _m in range(-mpol, mpol+1):
-    #                 for _n in range(-ntor, ntor+1):
-    #                     if self.reIndex and other.reIndex:
-    #                         reArr[i] += self.getRe(_m,_n)*other.getRe(m-_m,n-_n)
-    #                     if self.imIndex and other.imIndex:
-    #                         reArr[i] -= self.getIm(_m,_n)*other.getIm(m-_m,n-_n)
-    #                     if self.reIndex and other.imIndex:
-    #                         imArr[i] += self.getRe(_m,_n)*other.getIm(m-_m,n-_n)
-    #                     if self.imIndex and other.reIndex:
-    #                         imArr[i] += self.getIm(_m,_n)*other.getRe(m-_m,n-_n)
-    #         reIndex = (self.reIndex and other.reIndex) or (self.imIndex and self.imIndex)
-    #         imIndex = (self.reIndex and other.imIndex) or (self.reIndex and self.imIndex)
-    #         return ToroidalField(
-    #             nfp = self.nfp, 
-    #             mpol = mpol, 
-    #             ntor = ntor,
-    #             reArr = reArr,
-    #             imArr = imArr, 
-    #             reIndex = reIndex, 
-    #             imIndex = imIndex
-    #         )
-    #     else:
-    #         return ToroidalField(
-    #             nfp = self.nfp, 
-    #             mpol = self.mpol, 
-    #             ntor = self.ntor, 
-    #             reArr = other * self.reArr,
-    #             imArr = other * self.imArr, 
-    #             reIndex = self.reIndex, 
-    #             imIndex = self.imIndex
-    #         )
+    def __rsub__(self, other): 
+        _reArr = np.zeros_like(self.reArr) - self.reArr
+        _imArr = np.zeros_like(self.imArr) - self.imArr
+        _reArr[0] = _reArr[0] + other
+        return ToroidalField(
+            nfp = self.nfp, 
+            mpol = self.mpol, 
+            ntor = self.ntor,
+            reArr = _reArr, 
+            imArr = _imArr, 
+            reIndex = self.reIndex, 
+            imIndex = self.imIndex
+        )
 
     def __mul__(self, other):
         if isinstance(other, ToroidalField):
             assert self.nfp == other.nfp
-            mpol, ntor = self.mpol, self.ntor
+            mpol, ntor = self.mpol+other.mpol, self.ntor+other.ntor 
             reMat = np.zeros((2*mpol+1, 2*ntor+1))
             imMat = np.zeros((2*mpol+1, 2*ntor+1))
             if self.reIndex and other.reIndex:
-                reMat += convolve2d(self.reMatrix, other.reMatrix, mode='same')
+                reMat += convolve2d(self.reMatrix, other.reMatrix, mode='full')
             if self.imIndex and other.imIndex:
-                reMat -= convolve2d(self.imMatrix, other.imMatrix, mode='same')
+                reMat -= convolve2d(self.imMatrix, other.imMatrix, mode='full')
             if self.reIndex and other.imIndex:
-                imMat += convolve2d(self.reMatrix, other.imMatrix, mode='same')
+                imMat += convolve2d(self.reMatrix, other.imMatrix, mode='full')
             if self.imIndex and other.reIndex:
-                imMat += convolve2d(self.imMatrix, other.reMatrix, mode='same')
+                imMat += convolve2d(self.imMatrix, other.reMatrix, mode='full')
             reIndex = (self.reIndex and other.reIndex) or (self.imIndex and self.imIndex)
             imIndex = (self.reIndex and other.imIndex) or (self.reIndex and self.imIndex)
             return ToroidalField(
@@ -334,6 +348,17 @@ class ToroidalField:
                 imIndex = self.imIndex
             )
 
+    def __rmul__(self, other): 
+        return ToroidalField(
+            nfp = self.nfp, 
+            mpol = self.mpol, 
+            ntor = self.ntor, 
+            reArr = other * self.reArr,
+            imArr = other * self.imArr, 
+            reIndex = self.reIndex, 
+            imIndex = self.imIndex
+        )
+
     def __eq__(self, other) -> bool:
         try:
             assert self.nfp == other.nfp
@@ -345,7 +370,6 @@ class ToroidalField:
         except:
             return False
 
-    # class method
     @classmethod
     def constantField(cls, constant: int, nfp: int, mpol: int, ntor: int):
         reArr = np.zeros((2*ntor+1)*mpol+ntor+1)
