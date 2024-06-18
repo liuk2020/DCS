@@ -134,6 +134,59 @@ class VMECOut():
         )
         return _bSupU, _bSupV
 
+    def getBsub(self, surfaceIndex: int=-1) -> Tuple:
+        """
+        returns: 
+            bsubu, bsubv, bsubs 
+        """
+        mpol_nyq = int(np.max(self.xm_nyq))
+        ntor_nyq = int(np.max(self.xn_nyq/self.nfp))
+        bSubUc = self.bsubumnc[surfaceIndex, :] 
+        bSubVc = self.bsubvmnc[surfaceIndex, :] 
+        bSubSs = self.bsubsmns[surfaceIndex, :] 
+        if not self.ssym:
+            bSubUs = self.bsupumns[surfaceIndex, :]
+            bSubVs = self.bsupvmns[surfaceIndex, :]
+            bSubSc = self.bsupsmnc[surfaceIndex, :]
+        else:
+            bSubUs = np.zeros_like(bSubUc)
+            bSubVs = np.zeros_like(bSubVc)
+            bSubSc = np.zeros_like(bSubSs)
+        bSubUc[1: -1] = bSubUc[1: -1] / 2 
+        bSubUs[1: -1] = bSubUs[1: -1] / 2  
+        bSubVc[1: -1] = bSubVc[1: -1] / 2 
+        bSubVs[1: -1] = bSubVs[1: -1] / 2 
+        bSubSc[1: -1] = bSubSc[1: -1] / 2 
+        bSubSs[1: -1] = bSubSs[1: -1] / 2 
+        _bSubU = ToroidalField(
+            nfp = self.nfp,
+            mpol = mpol_nyq, 
+            ntor = ntor_nyq,
+            reArr = bSubUc,
+            imArr = -bSubUs, 
+            reIndex = True, 
+            imIndex = not self.ssym
+        ) 
+        _bSubV = ToroidalField(
+            nfp = self.nfp,
+            mpol = mpol_nyq, 
+            ntor = ntor_nyq,
+            reArr = bSubVc,
+            imArr = -bSubVs, 
+            reIndex = True, 
+            imIndex = not self.ssym
+        )
+        _bSubS = ToroidalField(
+            nfp = self.nfp,
+            mpol = mpol_nyq, 
+            ntor = ntor_nyq,
+            reArr = bSubSc,
+            imArr = -bSubSs, 
+            reIndex = not self.ssym, 
+            imIndex = True
+        )
+        return _bSubU, _bSubV, _bSubS
+
     def getB(self, surfaceIndex: int=-1) -> ToroidalField:
         """
         returns:
@@ -159,6 +212,39 @@ class VMECOut():
         )
         return _bField
 
+    def iota(self, surfaceIndex: int=-1): 
+        return float(self.iotas[surfaceIndex])
+
+    def getIG(self, bsubu: ToroidalField=None, bsubv: ToroidalField=None, surfaceIndex: int=-1): 
+        if (bsubu is None) or (bsubv is None): 
+            bsubu, bsubv, _ = self.getBsub(surfaceIndex)
+        return float(bsubu.getRe(0,0)),  float(bsubv.getRe(0,0))
+
+    def getOmega(self, bsubu: ToroidalField=None, bsubv: ToroidalField=None, lam: ToroidalField=None, iota: float=None, surfaceIndex: int=-1): 
+        if (bsubu is None) or (bsubv is None) or (lam is None) or (iota is None): 
+            bsubu, bsubv, _ = self.getBsub(surfaceIndex)
+            _, lam = self.getSurface(surfaceIndex) 
+            iota = self.iota(surfaceIndex)
+        curI, curG = self.getIG(bsubu, bsubv) 
+        from ..toroidalField import derivatePol, derivateTor
+        overI = bsubu - curI - curI*derivatePol(lam)
+        overG = bsubv - curG - curI*derivateTor(lam)
+        _omega = ToroidalField(
+            nfp = self.nfp, 
+            mpol = overI.mpol, 
+            ntor = overI.ntor, 
+            reArr = np.zeros_like(overI.reArr), 
+            imArr = np.zeros_like(overI.reArr)
+        )
+        for index in range(len(overI.reArr)):
+            m, n = overI.indexReverseMap(index)
+            if m!=0: 
+                _omega.setRe(m, n, overI.getIm(m,n)/m) 
+                _omega.setIm(m, n, overI.getRe(m,n)/m) 
+            elif n!=0: 
+                _omega.setRe(m, n, -overG.getIm(m,n)/n/self.nfp)  
+                _omega.setIm(m, n, -overG.getRe(m,n)/n/self.nfp)
+        return _omega * (-1/(iota*curI+curG))
 
 if __name__ == "__main__":
     pass

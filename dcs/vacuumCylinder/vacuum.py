@@ -56,11 +56,11 @@ class VacuumField:
         )
 
     def errerField(self) -> ToroidalField: 
-        g_thetatheta, g_thetazeta, g_zetazeta = self.surf.metric 
+        g_thetatheta, g_thetaphi, g_phiphi = self.surf.metric 
         return (
             self.dzetadphi * (self.dthetadphi-self.iota*self.dzetadphi) * g_thetatheta 
-            - (self.dthetadvartheta*self.dzetadphi + self.dthetadphi*self.dzetadvartheta -2*self.iota*self.dzetadvartheta*self.dzetadphi) * g_thetazeta 
-            + self.dzetadvartheta * (self.dthetadvartheta-self.iota*self.dzetadvartheta) * g_zetazeta
+            - (self.dthetadvartheta*self.dzetadphi + self.dthetadphi*self.dzetadvartheta -2*self.iota*self.dzetadvartheta*self.dzetadphi) * g_thetaphi 
+            + self.dzetadvartheta * (self.dthetadvartheta-self.iota*self.dzetadvartheta) * g_phiphi 
         )
 
 

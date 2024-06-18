@@ -223,8 +223,10 @@ class ToroidalField:
                 )
                 for index in range(_field.arrlen): 
                     m, n = _field.indexReverseMap(index)
-                    _field.setRe(m, n, self.getRe(m,n)+other.getRe(m,n)) 
-                    _field.setIm(m, n, self.getIm(m,n)+other.getIm(m,n)) 
+                    if _field.reIndex: 
+                        _field.setRe(m, n, self.getRe(m,n)+other.getRe(m,n)) 
+                    if _field.imIndex: 
+                        _field.setIm(m, n, self.getIm(m,n)+other.getIm(m,n)) 
                 return _field
         else:
             _reArr = np.zeros_like(self.reArr) + self.reArr
@@ -282,8 +284,10 @@ class ToroidalField:
                 )
                 for index in range(_field.arrlen): 
                     m, n = _field.indexReverseMap(index)
-                    _field.setRe(m, n, self.getRe(m,n)-other.getRe(m,n)) 
-                    _field.setIm(m, n, self.getIm(m,n)-other.getIm(m,n)) 
+                    if _field.reIndex:
+                        _field.setRe(m, n, self.getRe(m,n)-other.getRe(m,n)) 
+                    if _field.imIndex:
+                        _field.setIm(m, n, self.getIm(m,n)-other.getIm(m,n)) 
                 return _field
         else:
             _reArr = np.zeros_like(self.reArr) + self.reArr
