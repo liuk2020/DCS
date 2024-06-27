@@ -69,7 +69,7 @@ class VacuumField:
             mpol = valueField.mpol + max(self.omega.mpol, self.lam.mpol) 
             ntor = valueField.ntor + max(self.omega.ntor, self.lam.ntor)  
             sampleTheta = np.linspace(0, 2*np.pi, 2*mpol+1, endpoint=False) 
-            sampleZeta = np.linspace(0, 2*np.pi/self.nfp, 2*ntor+1, endpoint=False) 
+            sampleZeta = -np.linspace(0, 2*np.pi/self.nfp, 2*ntor+1, endpoint=False) 
             gridSampleZeta, gridSampleTheta = np.meshgrid(sampleZeta, sampleTheta) 
 
             # find the fixed point of vartheta and varphi 
