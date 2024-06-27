@@ -159,7 +159,7 @@ class ToroidalField:
         self.imArr[self.indexMap(m, n)] = value
 
     # plotting ###############################################################
-    def plot_plt(self, ntheta: int=360, nzeta: int=360, fig=None, ax=None, onePeriod: bool=True, **kwargs):
+    def plot_plt(self, ntheta: int=360, nzeta: int=360, fig=None, ax=None, onePeriod: bool=True, fill: bool=True, **kwargs):
         from matplotlib import cm
         import matplotlib.pyplot as plt 
         thetaArr = np.linspace(0, 2*np.pi, ntheta)
@@ -175,9 +175,14 @@ class ToroidalField:
         plt.sca(ax) 
         thetaGrid, zetaGrid = np.meshgrid(thetaArr, zetaArr) 
         valueGrid = self.getValue(thetaGrid, zetaGrid) 
-        ctrig = ax.contourf(zetaGrid, thetaGrid, valueGrid, cmap=cm.rainbow)
-        colorbar = fig.colorbar(ctrig)
-        colorbar.ax.tick_params(labelsize=18)
+        if fill: 
+            ctrig = ax.contourf(zetaGrid, thetaGrid, valueGrid, cmap=cm.rainbow)
+            colorbar = fig.colorbar(ctrig)
+            colorbar.ax.tick_params(labelsize=18) 
+        else: 
+            ctrig = ax.contour(zetaGrid, thetaGrid, valueGrid, cmap=cm.rainbow)
+            colorbar = fig.colorbar(ctrig)
+            colorbar.ax.tick_params(labelsize=18) 
         if kwargs.get("toroidalLabel") == None:
             kwargs.update({"toroidalLabel": r"$\zeta$"})
         if kwargs.get("poloidalLabel") == None:
