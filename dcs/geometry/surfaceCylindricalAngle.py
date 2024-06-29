@@ -68,6 +68,19 @@ class Surface_cylindricalAngle(Surface):
         plt.axis("equal")
         return fig
 
+    def toVTK(self, vtkname, mpol: int=360, ntor: int=360, **kwargs): 
+        from pyevtk.hl import gridToVTK
+        thetaArr, zetaArr = np.linspace(0, 2*np.pi, mpol), np.linspace(0, 2*np.pi, ntor*self.nfp)
+        zetaGrid, thetaGrid = np.meshgrid(zetaArr, thetaArr)
+        xGrid, yGrid, zGrid = self.getXYZ(thetaGrid, zetaGrid)
+        gridToVTK(
+            vtkname, 
+            xGrid.reshape((1, mpol, ntor*self.nfp)), 
+            yGrid.reshape((1, mpol, ntor*self.nfp)), 
+            zGrid.reshape((1, mpol, ntor*self.nfp)), 
+            pointData = kwargs
+        )
+
     def toVacuumVMEC(self, fileName: str, params: Dict=dict()) -> None: 
         
         if "lasym" not in params.keys():

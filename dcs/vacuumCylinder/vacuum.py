@@ -64,10 +64,11 @@ class VacuumField:
             + self.dzetadvartheta * (self.dthetadvartheta-self.iota*self.dzetadvartheta) * g_phiphi 
         )
 
-    def transBoozer(self, valueField: ToroidalField, **kwargs) -> ToroidalField:
+    def transBoozer(self, valueField: ToroidalField, mpol: int=None, ntor: int=None, **kwargs) -> ToroidalField:
 
-            mpol = valueField.mpol + max(self.omega.mpol, self.lam.mpol) 
-            ntor = valueField.ntor + max(self.omega.ntor, self.lam.ntor)  
+            if mpol is None and ntor is None: 
+                mpol = valueField.mpol + max(self.omega.mpol, self.lam.mpol) 
+                ntor = valueField.ntor + max(self.omega.ntor, self.lam.ntor) 
             sampleTheta = np.linspace(0, 2*np.pi, 2*mpol+1, endpoint=False) 
             sampleZeta = -np.linspace(0, 2*np.pi/self.nfp, 2*ntor+1, endpoint=False) 
             gridSampleZeta, gridSampleTheta = np.meshgrid(sampleZeta, sampleTheta) 
