@@ -11,16 +11,19 @@ from ..toroidalField import derivatePol, derivateTor
 
 class VacuumField: 
     
-    def __init__(self, surf: Surface_cylindricalAngle, lambdaField: ToroidalField=None, omegaField: ToroidalField=None, iota: float=0.0) -> None:
+    def __init__(self, surf: Surface_cylindricalAngle, lambdaField: ToroidalField=None, omegaField: ToroidalField=None, iota: float=0.0, stellSym: bool=True) -> None:
         self.surf = surf 
-        self.initLambda(lambdaField) 
-        self.initOmega(omegaField) 
-        self._iota = iota 
+        self.updateLambda(lambdaField) 
+        self.updateOmega(omegaField) 
+        self.updateIota(iota) 
+        self.updateStellSym(stellSym)
 
-    def initLambda(self, lambdaField: ToroidalField) -> None:
+    def updateLambda(self, lambdaField: ToroidalField) -> None:
+        assert lambdaField.nfp == self.surf.nfp 
         self.lam = lambdaField 
     
-    def initOmega(self, omegaField: ToroidalField) -> None:
+    def updateOmega(self, omegaField: ToroidalField) -> None:
+        assert self.surf.nfp == omegaField.nfp
         self.omega = omegaField
     
     @property
@@ -28,8 +31,12 @@ class VacuumField:
         return self._iota
 
     @property
+    def stellSym(self) -> bool:
+        return self.surf.stellSym and (not self.omega.reIndex) and (not self.lam.reIndex)
+
+    @property
     def nfp(self): 
-        return self.surf.nfp 
+        return self.surf.nfp
 
     @property
     def dthetadvartheta(self): 
@@ -37,11 +44,11 @@ class VacuumField:
 
     @property
     def dthetadphi(self): 
-        return derivateTor(self.lam) + self.iota*derivateTor(self.omega) 
+        return derivateTor(self.lam) + self.iota*derivateTor(self.omega)
 
     @property 
     def dzetadvartheta(self): 
-        return derivatePol(self.omega) 
+        return derivatePol(self.omega)
 
     @property
     def dzetadphi(self): 
@@ -49,6 +56,20 @@ class VacuumField:
     
     def updateIota(self, iota: float): 
         self._iota = iota
+
+    def updateStellSym(self, stellSym: bool):
+        if stellSym:
+            self.surf.changeStellSym(stellSym)
+            self.omega.reIndex, self.lam.reIndex = False, False 
+        else:
+            self.surf.changeStellSym(stellSym)
+            self.omega.reIndex, self.lam.reIndex = True, True
+
+    def updateNFP(self, nfp: int): 
+        self.surf.r.nfp = nfp
+        self.surf.z.nfp = nfp
+        self.lam.nfp = nfp
+        self.omega.nfp = nfp
 
     def updateCoefficient(self): 
         self.coefficient = (
@@ -66,40 +87,40 @@ class VacuumField:
 
     def transBoozer(self, valueField: ToroidalField, mpol: int=None, ntor: int=None, **kwargs) -> ToroidalField:
 
-            if mpol is None and ntor is None: 
-                mpol = valueField.mpol + max(self.omega.mpol, self.lam.mpol) 
-                ntor = valueField.ntor + max(self.omega.ntor, self.lam.ntor) 
-            sampleTheta = np.linspace(0, 2*np.pi, 2*mpol+1, endpoint=False) 
-            sampleZeta = -np.linspace(0, 2*np.pi/self.nfp, 2*ntor+1, endpoint=False) 
-            gridSampleZeta, gridSampleTheta = np.meshgrid(sampleZeta, sampleTheta) 
+        if mpol is None and ntor is None: 
+            mpol = valueField.mpol + max(self.omega.mpol, self.lam.mpol) 
+            ntor = valueField.ntor + max(self.omega.ntor, self.lam.ntor) 
+        sampleTheta = np.linspace(0, 2*np.pi, 2*mpol+1, endpoint=False) 
+        sampleZeta = -np.linspace(0, 2*np.pi/self.nfp, 2*ntor+1, endpoint=False) 
+        gridSampleZeta, gridSampleTheta = np.meshgrid(sampleZeta, sampleTheta) 
 
-            # find the fixed point of vartheta and varphi 
-            def varthetaphiValue(inits, theta, zeta):
-                vartheta, varphi = inits[0], inits[1]
-                lamValue = self.lam.getValue(vartheta, varphi) 
-                omegaValue = self.omega.getValue(vartheta, varphi)
-                return np.array([
-                    theta - lamValue - self.iota*omegaValue, 
-                    zeta - omegaValue
-                ])
+        # find the fixed point of vartheta and varphi 
+        def varthetaphiValue(inits, theta, zeta):
+            vartheta, varphi = inits[0], inits[1]
+            lamValue = self.lam.getValue(vartheta, varphi) 
+            omegaValue = self.omega.getValue(vartheta, varphi)
+            return np.array([
+                theta - lamValue - self.iota*omegaValue, 
+                zeta - omegaValue
+            ])
 
-            from scipy.optimize import fixed_point
-            gridVartheta, gridVarphi = np.zeros_like(gridSampleTheta), np.zeros_like(gridSampleZeta) 
-            for i in range(len(gridVartheta)): 
-                for j in range(len(gridVartheta[0])): 
-                    try:
-                        varthetaphi = fixed_point(
-                            varthetaphiValue, [gridSampleTheta[i,j],gridSampleZeta[i,j]], args=(gridSampleTheta[i,j],gridSampleZeta[i,j]), **kwargs
-                        )
-                    except:
-                        varthetaphi = fixed_point(
-                            varthetaphiValue, [gridSampleTheta[i,j],gridSampleZeta[i,j]], args=(gridSampleTheta[i,j],gridSampleZeta[i,j]), method="iteration",**kwargs
-                        )
-                    gridVartheta[i,j] = float(varthetaphi[0,0])
-                    gridVarphi[i,j] = float(varthetaphi[1,0])
-            sampleValue = valueField.getValue(gridVartheta, gridVarphi)
-            from ..toroidalField import fftToroidalField
-            return fftToroidalField(sampleValue, nfp=self.nfp)
+        from scipy.optimize import fixed_point
+        gridVartheta, gridVarphi = np.zeros_like(gridSampleTheta), np.zeros_like(gridSampleZeta) 
+        for i in range(len(gridVartheta)): 
+            for j in range(len(gridVartheta[0])): 
+                try:
+                    varthetaphi = fixed_point(
+                        varthetaphiValue, [gridSampleTheta[i,j],gridSampleZeta[i,j]], args=(gridSampleTheta[i,j],gridSampleZeta[i,j]), **kwargs
+                    )
+                except:
+                    varthetaphi = fixed_point(
+                        varthetaphiValue, [gridSampleTheta[i,j],gridSampleZeta[i,j]], args=(gridSampleTheta[i,j],gridSampleZeta[i,j]), method="iteration",**kwargs
+                    )
+                gridVartheta[i,j] = float(varthetaphi[0,0])
+                gridVarphi[i,j] = float(varthetaphi[1,0])
+        sampleValue = valueField.getValue(gridVartheta, gridVarphi)
+        from ..toroidalField import fftToroidalField
+        return fftToroidalField(sampleValue, nfp=self.nfp)
 
 
 if __name__ == "__main__": 
