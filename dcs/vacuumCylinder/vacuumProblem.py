@@ -24,15 +24,12 @@ class VacuumProblem(VacuumField):
         stellSym: bool=True
     ) -> None:
         self.mpol, self.ntor = mpol, ntor
-        _lam = self._init_lam(surf.nfp, self.mpol, self.ntor)
-        _omega = self._init_omega(surf.nfp, self.mpol, self.ntor)
+        _lam = ToroidalField.constantField(0, nfp=surf.nfp, mpol=mpol, ntor=ntor)
+        _lam.reIndex, _lam.imIndex = False, True
+        _omega = ToroidalField.constantField(0, nfp=surf.nfp, mpol=mpol, ntor=ntor)
+        _omega.reIndex, _omega.imIndex = False, True
         super().__init__(surf, _lam, _omega, iota, stellSym) 
-
-    def _init_lam(self, nfp: int, mpol: int, ntor: int): 
-        return ToroidalField.constantField(0, nfp=nfp, mpol=mpol, ntor=ntor)
-
-    def _init_omega(self, nfp: int, mpol: int, ntor: int):
-        return ToroidalField.constantField(0, nfp=nfp, mpol=mpol, ntor=ntor)
+        self.updateStellSym(stellSym)
     
     @property
     def initDOFs(self) -> np.ndarray:
@@ -93,9 +90,9 @@ class VacuumProblem(VacuumField):
             self.unpackDOFs(dofs)
             error = self.errerField()
             if not norm:
-                return np.hstack(error.reArr, error.imArr)
+                return np.hstack((error.reArr, error.imArr))
             else:
-                return np.linalg.norm(np.hstack(error.reArr, error.imArr))
+                return np.linalg.norm(np.hstack((error.reArr, error.imArr)))
         self.niter = 0 
         def callbackFun(xi):
             self.niter += 1
@@ -188,8 +185,8 @@ class VacuumProblem(VacuumField):
                     imArr=f["omega"]["im"][:]
                 )
         _vaccumSurf = cls(Surface_cylindricalAngle(_r,_z), mpol=mpol, ntor=ntor, iota=iota, stellsym=stellsym)
-        _vaccumSurf._init_lam(_lam)
-        _vaccumSurf._init_omega(_omega)
+        _vaccumSurf.updateLam(_lam)
+        _vaccumSurf.updateOmega(_omega)
         _vaccumSurf.updateIota(iota)
         return _vaccumSurf
 
