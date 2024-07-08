@@ -4,6 +4,7 @@
 
 
 import logging
+import h5py
 import numpy as np
 from .vacuum import VacuumField 
 from ..toroidalField import ToroidalField
@@ -106,6 +107,91 @@ class VacuumProblem(VacuumField):
         self.unpackDOFs(res.x)
         if self.niter != 0 and self.niter%50 != 0:
             logger.info("{:>8d} {:>16e} {:>16e}".format(0, self.iota, cost(self.initDOFs,norm=True)))
+
+    def writeH5(self, filename: str="vacuumSurf"):
+        with h5py.File(filename+".h5", 'w') as f:
+            f.create_dataset(
+                "resolution", 
+                data = (self.nfp, int(self.stellSym), self.mpol, self.ntor, self.surf.r.mpol, self.surf.r.ntor, self.surf.z.mpol, self.surf.z.ntor, self.iota), 
+                dtype = "int32"
+            )
+            f.create_group("r")
+            f.create_group("z")
+            f.create_group("lam")
+            f.create_group("omega")
+            f["r"].create_dataset("re", self.surf.r.reArr)
+            f["z"].create_dataset("im", self.surf.z.imArr)
+            f["lam"].create_dataset("im", self.lam.imArr)
+            f["omega"].create_dataset("im", self.omega.imArr)
+            if not self.stellSym:
+                f["r"].create_dataset("im", self.surf.r.imArr)
+                f["z"].create_dataset("re", self.surf.z.reArr)
+                f["lam"].create_dataset("re", self.lam.reArr)
+                f["omega"].create_dataset("re", self.omega.reArr)
+
+    @classmethod
+    def readH5(cls, filename):
+        with h5py.File(filename, 'r') as f:
+            nfp = int(f["resolution"][0])
+            stellsym = bool(f["resolution"][1])
+            mpol = int(f["resolution"][2])
+            ntor = int(f["resolution"][3])
+            r_mpol = int(f["resolution"][4])
+            r_ntor = int(f["resolution"][5])
+            z_mpol = int(f["resolution"][6])
+            z_ntor = int(f["resolution"][7])
+            iota = float(f["resolution"][8])
+            if stellsym:
+                _r = ToroidalField(
+                    nfp=nfp, mpol=r_mpol, ntor=r_ntor, 
+                    reArr=f["r"]["re"][:], 
+                    imArr=np.zeros_like(f["r"]["re"][:]), 
+                    imIndex=False
+                )
+                _z = ToroidalField(
+                    nfp=nfp, mpol=z_mpol, ntor=z_ntor, 
+                    reArr=np.zeros_like(f["z"]["im"][:]),
+                    imArr=f["z"]["im"][:],  
+                    reIndex=False
+                )
+                _lam = ToroidalField(
+                    nfp=nfp, mpol=mpol, ntor=ntor, 
+                    reArr=np.zeros_like(f["lam"]["im"][:]),
+                    imArr=f["lam"]["im"][:],  
+                    reIndex=False
+                )
+                _omega = ToroidalField(
+                    nfp=nfp, mpol=mpol, ntor=ntor, 
+                    reArr=np.zeros_like(f["omega"]["im"][:]),
+                    imArr=f["omega"]["im"][:],  
+                    reIndex=False
+                )
+            else:
+                _r = ToroidalField(
+                    nfp=nfp, mpol=r_mpol, ntor=r_ntor, 
+                    reArr=f["r"]["re"][:], 
+                    imArr=f["r"]["im"][:]
+                )
+                _z = ToroidalField(
+                    nfp=nfp, mpol=z_mpol, ntor=z_ntor, 
+                    reArr=f["z"]["re"][:],
+                    imArr=f["z"]["im"][:] 
+                )
+                _lam = ToroidalField(
+                    nfp=nfp, mpol=mpol, ntor=ntor, 
+                    reArr=f["lam"]["re"][:],
+                    imArr=f["lam"]["im"][:] 
+                )
+                _omega = ToroidalField(
+                    nfp=nfp, mpol=mpol, ntor=ntor, 
+                    reArr=f["omega"]["re"][:],
+                    imArr=f["omega"]["im"][:]
+                )
+        _vaccumSurf = cls(Surface_cylindricalAngle(_r,_z), mpol=mpol, ntor=ntor, targetIota=iota, stellsym=stellsym)
+        _vaccumSurf._init_lam(_lam)
+        _vaccumSurf._init_omega(_omega)
+        _vaccumSurf.updateIota(iota)
+        return _vaccumSurf
 
 
 if __name__ == "__main__": 
