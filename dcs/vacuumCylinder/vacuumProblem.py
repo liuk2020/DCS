@@ -20,13 +20,13 @@ class VacuumProblem(VacuumField):
         surf: Surface_cylindricalAngle, 
         mpol: int, 
         ntor: int,
-        targetIota: float=0.618, 
+        iota: float=0.0, 
         stellSym: bool=True
     ) -> None:
         self.mpol, self.ntor = mpol, ntor
         _lam = self._init_lam(surf.nfp, self.mpol, self.ntor)
         _omega = self._init_omega(surf.nfp, self.mpol, self.ntor)
-        super().__init__(surf, _lam, _omega, targetIota, stellSym) 
+        super().__init__(surf, _lam, _omega, iota, stellSym) 
 
     def _init_lam(self, nfp: int, mpol: int, ntor: int): 
         return ToroidalField.constantField(0, nfp=nfp, mpol=mpol, ntor=ntor)
@@ -187,7 +187,7 @@ class VacuumProblem(VacuumField):
                     reArr=f["omega"]["re"][:],
                     imArr=f["omega"]["im"][:]
                 )
-        _vaccumSurf = cls(Surface_cylindricalAngle(_r,_z), mpol=mpol, ntor=ntor, targetIota=iota, stellsym=stellsym)
+        _vaccumSurf = cls(Surface_cylindricalAngle(_r,_z), mpol=mpol, ntor=ntor, iota=iota, stellsym=stellsym)
         _vaccumSurf._init_lam(_lam)
         _vaccumSurf._init_omega(_omega)
         _vaccumSurf.updateIota(iota)
