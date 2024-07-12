@@ -10,7 +10,7 @@ from .vacuum import VacuumField
 from ..toroidalField import ToroidalField
 from ..geometry import Surface_cylindricalAngle 
 from ..toroidalField import changeResolution
-from scipy.optimize import root
+from scipy.optimize import root, minimize
 
 
 class VacuumProblem(VacuumField):
@@ -70,6 +70,7 @@ class VacuumProblem(VacuumField):
     def solve(self, 
         logfile: str="log", 
         logscreen: bool=True, 
+        nStep: int=10,
         **kwargs
     ):
         # log #########################################################################################
@@ -86,24 +87,39 @@ class VacuumProblem(VacuumField):
             logger.addHandler(sh)
             sh.setLevel(logging.INFO)
         # solve #######################################################################################
-        def cost(dofs, norm: bool=False):
+        def cost(dofs, norm: bool=True):
             self.unpackDOFs(dofs)
             error = self.errerField()
             if not norm:
-                return np.hstack((error.reArr, error.imArr))
+                if self.stellSym:
+                    constraints = [error.reArr[0]]
+                    for m in range(1, 2*self.mpol+1):
+                        constraints.append(error.getRe(m,0))
+                    for n in range(1, 2*self.ntor+1):
+                        constraints.append(error.getRe(0,n))
+                    for m in range(1, 2*self.mpol+1):
+                        for n in range(1, 2*self.ntor+1):
+                            constraints.append(error.getRe(m,n))
+                    return np.array(constraints)
+                # TODO: the constraints without the stellarator symmetry 
+                else:
+                    pass
             else:
-                return np.linalg.norm(np.hstack((error.reArr, error.imArr)))
+                if self.stellSym:
+                    return np.linalg.norm(error.reArr)
+                else:
+                    return np.linalg.norm(np.hstack((error.reArr, error.imArr)))
         self.niter = 0 
         def callbackFun(xi):
             self.niter += 1
-            if self.niter%50 == 0:
-                logger.info("{:>8d} {:>16e} {:>16e}".format(0, self.iota, cost(xi,norm=True)))
+            if self.niter%nStep == 0:
+                logger.info("{:>8d} {:>16e} {:>16e}".format(self.niter, self.iota, cost(xi,norm=True)))
         logger.info("{:>8} {:>16} {:>16}".format('niter', 'iota', 'residuals')) 
         logger.info("{:>8d} {:>16e} {:>16e}".format(0, self.iota, cost(self.initDOFs,norm=True)))
-        res = root(cost, self.initDOFs, callback=callbackFun, **kwargs)
-        self.unpackDOFs(res.x)
-        if self.niter != 0 and self.niter%50 != 0:
-            logger.info("{:>8d} {:>16e} {:>16e}".format(0, self.iota, cost(self.initDOFs,norm=True)))
+        # res = root(cost, self.initDOFs, callback=callbackFun, **kwargs)
+        res = minimize(cost, self.initDOFs, callback=callbackFun, **kwargs)
+        if self.niter != 0 and self.niter%nStep != 0:
+            logger.info("{:>8d} {:>16e} {:>16e}".format(self.niter, self.iota, cost(res.x,norm=True)))
 
     def writeH5(self, filename: str="vacuumSurf"):
         with h5py.File(filename+".h5", 'w') as f:
