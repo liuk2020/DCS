@@ -21,7 +21,9 @@ class VacuumProblem(VacuumField):
         mpol: int, 
         ntor: int,
         iota: float=0.0, 
-        stellSym: bool=True
+        stellSym: bool=True,
+        logfile: str="log",
+        logscreen: bool=True
     ) -> None:
         self.mpol, self.ntor = mpol, ntor
         _lam = ToroidalField.constantField(0, nfp=surf.nfp, mpol=mpol, ntor=ntor)
@@ -30,15 +32,45 @@ class VacuumProblem(VacuumField):
         _omega.reIndex, _omega.imIndex = False, True
         super().__init__(surf, _lam, _omega, iota, stellSym) 
         self.updateStellSym(stellSym)
-    
+        self._init_log(logfile, logscreen)
+        self.logger.info("Problem initialization is done... ")
+        self._init_paras()
+
+    def _init_log(self, logfile, logscreen) -> None:
+        self.logger = logging.getLogger('my logger')
+        self.logger.setLevel(logging.DEBUG)
+        fh = logging.FileHandler(logfile+".txt", mode='w', encoding='utf-8')
+        fmt = logging.Formatter(fmt = "%(asctime)s  - %(message)s")
+        fh.setFormatter(fmt)
+        self.logger.addHandler(fh)
+        fh.setLevel(logging.INFO)
+        if logscreen:
+            sh = logging.StreamHandler() 
+            sh.setFormatter(fmt)
+            self.logger.addHandler(sh)
+            sh.setLevel(logging.INFO)
+
+    def _init_paras(self): 
+        self._powerIndex = 1.3
+        self._iotaIndex = 3
+
     @property
     def initDOFs(self) -> np.ndarray:
-        dofs = np.append(self.iota, self.lam.imArr[1: ])
-        dofs = np.append(dofs, self.omega.imArr[1: ])
+        dofs = [self.iota*self._iotaIndex]
+        for index, value in enumerate(self.lam.imArr[1: ]):
+            m, n = self.lam.indexReverseMap(index+1)
+            dofs.append(value * pow(self._powerIndex,abs(m)+abs(n)))
+        for index, value in enumerate(self.omega.imArr[1: ]):
+            m, n = self.omega.indexReverseMap(index+1)
+            dofs.append(value * pow(self._powerIndex,abs(m)+abs(n)))
         if not self.stellSym:
-            dofs = np.append(dofs, self.lam.reArr[1: ])
-            dofs = np.append(dofs, self.omega.reArr[1: ])
-        return dofs
+            for index, value in enumerate(self.lam.reArr[1: ]):
+                m, n = self.lam.indexReverseMap(index+1)
+                dofs.append(value * pow(self._powerIndex,abs(m)+abs(n)))
+            for index, value in enumerate(self.omega.reArr[1: ]):
+                m, n = self.omega.indexReverseMap(index+1)
+                dofs.append(value * pow(self._powerIndex,abs(m)+abs(n)))
+        return np.array(dofs)
 
     def updateResolution(self, mpol: int, ntor: int):
         self.mpol = mpol
@@ -52,41 +84,38 @@ class VacuumProblem(VacuumField):
             assert dofs.size == 2*length + 1
         else:
             assert dofs.size == 4*length + 1
-        self.updateIota(dofs[0])
+        self.updateIota(dofs[0]/self._iotaIndex)
         for index in range(1, length+1):
-            m, n = self.lam.indexReverseMap(index-1)
-            self.lam.setIm(m, n, dofs[index])
+            m, n = self.lam.indexReverseMap(index)
+            self.lam.setIm(m, n, dofs[index]/pow(self._powerIndex,abs(m)+abs(n)))
         for index in range(length+1, 2*length+1):
-            m, n = self.omega.indexReverseMap(index-1-length)
-            self.omega.setIm(m, n, dofs[index])
+            m, n = self.omega.indexReverseMap(index-length)
+            self.omega.setIm(m, n, dofs[index]/pow(self._powerIndex,abs(m)+abs(n)))
         if not self.stellSym:
             for index in range(2*length+1, 3*length+1):
-                m, n = self.lam.indexReverseMap(index-1-2*length)
-                self.lam.setRe(m, n, dofs[index])
+                m, n = self.lam.indexReverseMap(index-2*length)
+                self.lam.setRe(m, n, dofs[index]/pow(self._powerIndex,abs(m)+abs(n)))
             for index in range(3*length+1, 4*length+1):
-                m, n = self.omega.indexReverseMap(index-1-3*length)
-                self.omega.setRe(m,n,dofs[index])
+                m, n = self.omega.indexReverseMap(index-3*length)
+                self.omega.setRe(m,n,dofs[index]/pow(self._powerIndex,abs(m)+abs(n)))
 
     def solve(self, 
-        logfile: str="log", 
-        logscreen: bool=True, 
+        type: str="minimize",
         nStep: int=10,
         **kwargs
     ):
-        # log #########################################################################################
-        logger = logging.getLogger('my logger')
-        logger.setLevel(logging.DEBUG)
-        fh = logging.FileHandler(logfile, mode='w', encoding='utf-8')
-        fmt = logging.Formatter(fmt = "%(asctime)s  - %(message)s")
-        fh.setFormatter(fmt)
-        logger.addHandler(fh)
-        fh.setLevel(logging.INFO)
-        if logscreen:
-            sh = logging.StreamHandler() 
-            sh.setFormatter(fmt)
-            logger.addHandler(sh)
-            sh.setLevel(logging.INFO)
-        # solve #######################################################################################
+        r"""
+        Solve the equation of the constrain of the vacuum field to get the lambda and omega. 
+        Args:
+            `type`: type of solver.  Should be "minimize" or "root" 
+            `nStep`: number of the steps at log output
+        """
+        self.logger.info(f"The resolution of the geometry:     mpol={max(self.surf.r.mpol,self.surf.z.mpol)}, ntor={max(self.surf.r.ntor,self.surf.z.ntor)}")
+        self.logger.info(f"The resolution of lambda and omega: mpol={self.mpol}, ntor={self.ntor}")
+        if  max(self.surf.r.ntor,self.surf.z.ntor) == 0:
+            self.logger.info("The surface is axisymmetrical...")
+            self.solveAxisymmetry()
+            return
         def cost(dofs, norm: bool=True):
             self.unpackDOFs(dofs)
             error = self.errerField()
@@ -113,13 +142,20 @@ class VacuumProblem(VacuumField):
         def callbackFun(xi):
             self.niter += 1
             if self.niter%nStep == 0:
-                logger.info("{:>8d} {:>16e} {:>16e}".format(self.niter, self.iota, cost(xi,norm=True)))
-        logger.info("{:>8} {:>16} {:>16}".format('niter', 'iota', 'residuals')) 
-        logger.info("{:>8d} {:>16e} {:>16e}".format(0, self.iota, cost(self.initDOFs,norm=True)))
-        # res = root(cost, self.initDOFs, callback=callbackFun, **kwargs)
-        res = minimize(cost, self.initDOFs, callback=callbackFun, **kwargs)
+                self.logger.info("{:<10d} {:<16f} {:<16e}".format(self.niter, self.iota, cost(xi,norm=True)))
+        g_thetatheta, g_thetaphi, g_phiphi = self.surf.metric 
+        _iota = - g_thetaphi.getRe(0,0) / g_thetatheta.getRe(0,0)
+        self.updateIota(_iota)
+        self.logger.info(f"Initial iota: {_iota}")
+        self.logger.info("{:<10} {:<16} {:<16}".format('niter', 'iota', 'residuals')) 
+        self.logger.info("{:<10d} {:<16f} {:<16e}".format(0, self.iota, cost(self.initDOFs,norm=True)))
+        if type == "minimize":
+            res = minimize(cost, self.initDOFs, callback=callbackFun, **kwargs)
+        elif type == "root":
+            res = root(cost, self.initDOFs, **kwargs)
         if self.niter != 0 and self.niter%nStep != 0:
-            logger.info("{:>8d} {:>16e} {:>16e}".format(self.niter, self.iota, cost(res.x,norm=True)))
+            self.logger.info("{:<10d} {:<16f} {:<16e}".format(self.niter, self.iota, cost(res.x,norm=True)))
+        return
 
     def writeH5(self, filename: str="vacuumSurf"):
         with h5py.File(filename+".h5", 'w') as f:
@@ -205,6 +241,15 @@ class VacuumProblem(VacuumField):
         _vaccumSurf.updateOmega(_omega)
         _vaccumSurf.updateIota(iota)
         return _vaccumSurf
+
+    def solveAxisymmetry(self):
+        _lam = ToroidalField.constantField(0, nfp=self.nfp, mpol=self.mpol, ntor=self.ntor)
+        _omega = ToroidalField.constantField(0, nfp=self.nfp, mpol=self.mpol, ntor=self.ntor)
+        self.updateLambda(_lam)
+        self.updateOmega(_omega)
+        self.updateStellSym(self.stellSym)
+        self.updateIota(0)
+        return
 
 
 if __name__ == "__main__": 
