@@ -8,6 +8,7 @@ from ..toroidalField import ToroidalField
 from ..geometry import Surface_cylindricalAngle 
 from ..toroidalField import derivatePol, derivateTor
 from ..toroidalField import fftToroidalField
+from typing import List
 
 
 class VacuumField: 
@@ -111,7 +112,7 @@ class VacuumField:
         return fftToroidalField(sampleB, nfp=self.nfp)
 
 
-    def transBoozer(self, valueField: ToroidalField, mpol: int=None, ntor: int=None, **kwargs) -> ToroidalField:
+    def transBoozer(self, valueField: ToroidalField or List[ToroidalField], mpol: int=None, ntor: int=None, **kwargs) -> ToroidalField:
 
         if mpol is None and ntor is None: 
             mpol = valueField.mpol + max(self.omega.mpol, self.lam.mpol) 
@@ -144,9 +145,20 @@ class VacuumField:
                     )
                 gridVartheta[i,j] = float(varthetaphi[0,0])
                 gridVarphi[i,j] = float(varthetaphi[1,0])
-        sampleValue = valueField.getValue(gridVartheta, gridVarphi)
+        
+        from collections import Iterable
         from ..toroidalField import fftToroidalField
-        return fftToroidalField(sampleValue, nfp=self.nfp)
+        if isinstance(valueField, ToroidalField):
+            sampleValue = valueField.getValue(gridVartheta, gridVarphi)
+            return fftToroidalField(sampleValue, nfp=self.nfp)
+        elif isinstance(valueField, Iterable) and isinstance(valueField[0], ToroidalField):
+            ans = list()
+            for _field in valueField:
+                _sampleValue = _field.getValue(gridVartheta, gridVarphi)
+                ans.append(fftToroidalField(sampleValue, nfp=self.nfp))
+            return ans
+        else:
+            print("Wrong type of the valuefield... ")
 
 
 if __name__ == "__main__": 
