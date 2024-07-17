@@ -155,7 +155,7 @@ class VacuumField:
             ans = list()
             for _field in valueField:
                 _sampleValue = _field.getValue(gridVartheta, gridVarphi)
-                ans.append(fftToroidalField(sampleValue, nfp=self.nfp))
+                ans.append(fftToroidalField(_sampleValue, nfp=self.nfp))
             return ans
         else:
             print("Wrong type of the valuefield... ")
