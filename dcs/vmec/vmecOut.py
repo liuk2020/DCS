@@ -27,13 +27,13 @@ class VMECOut():
         """
         mpol = int(self.mpol) - 1 
         ntor = int(self.ntor) 
-        rbc = self.rmnc[surfaceIndex, :] 
-        zbs = self.zmns[surfaceIndex, :] 
-        lams = self.lmns[surfaceIndex, :]
+        rbc = self.rmnc[surfaceIndex, :].copy()
+        zbs = self.zmns[surfaceIndex, :].copy()
+        lams = self.lmns[surfaceIndex, :].copy()
         if not self.ssym: 
-            rbs = self.rmns[surfaceIndex, :] 
-            zbc = self.zmnc[surfaceIndex, :] 
-            lamc = self.lmnc[surfaceIndex, :]
+            rbs = self.rmns[surfaceIndex, :].copy()
+            zbc = self.zmnc[surfaceIndex, :].copy()
+            lamc = self.lmnc[surfaceIndex, :].copy()
         else:
             rbs = np.zeros_like(rbc) 
             zbc = np.zeros_like(zbs) 
@@ -77,9 +77,9 @@ class VMECOut():
     def getJacobian(self, surfaceIndex: int=-1) -> ToroidalField:
         mpol_nyq = int(np.max(self.xm_nyq))
         ntor_nyq = int(np.max(self.xn_nyq/self.nfp))
-        gc = self.gmnc[surfaceIndex, :] 
+        gc = self.gmnc[surfaceIndex, :].copy()
         if not self.ssym:
-            gs = self.gmns[surfaceIndex, :]
+            gs = self.gmns[surfaceIndex, :].copy()
         else:
             gs = np.zeros_like(gc)
         gc[1:-1] = gc[1:-1] / 2
@@ -102,11 +102,11 @@ class VMECOut():
         """
         mpol_nyq = int(np.max(self.xm_nyq))
         ntor_nyq = int(np.max(self.xn_nyq/self.nfp))
-        bSupUc = self.bsupumnc[surfaceIndex, :] 
-        bSupVc = self.bsupvmnc[surfaceIndex, :] 
+        bSupUc = self.bsupumnc[surfaceIndex, :].copy() 
+        bSupVc = self.bsupvmnc[surfaceIndex, :].copy()
         if not self.ssym:
-            bSupUs = self.bsupumns[surfaceIndex, :]
-            bSupVs = self.bsupvmns[surfaceIndex, :]
+            bSupUs = self.bsupumns[surfaceIndex, :].copy()
+            bSupVs = self.bsupvmns[surfaceIndex, :].copy()
         else:
             bSupUs = np.zeros_like(bSupUc)
             bSupVs = np.zeros_like(bSupVc)
@@ -141,13 +141,13 @@ class VMECOut():
         """
         mpol_nyq = int(np.max(self.xm_nyq))
         ntor_nyq = int(np.max(self.xn_nyq/self.nfp))
-        bSubUc = self.bsubumnc[surfaceIndex, :] 
-        bSubVc = self.bsubvmnc[surfaceIndex, :] 
-        bSubSs = self.bsubsmns[surfaceIndex, :] 
+        bSubUc = self.bsubumnc[surfaceIndex, :].copy() 
+        bSubVc = self.bsubvmnc[surfaceIndex, :].copy()
+        bSubSs = self.bsubsmns[surfaceIndex, :].copy()
         if not self.ssym:
-            bSubUs = self.bsupumns[surfaceIndex, :]
-            bSubVs = self.bsupvmns[surfaceIndex, :]
-            bSubSc = self.bsupsmnc[surfaceIndex, :]
+            bSubUs = self.bsupumns[surfaceIndex, :].copy()
+            bSubVs = self.bsupvmns[surfaceIndex, :].copy()
+            bSubSc = self.bsupsmnc[surfaceIndex, :].copy()
         else:
             bSubUs = np.zeros_like(bSubUc)
             bSubVs = np.zeros_like(bSubVc)
@@ -194,9 +194,9 @@ class VMECOut():
         """
         mpol_nyq = int(np.max(self.xm_nyq))
         ntor_nyq = int(np.max(self.xn_nyq/self.nfp))
-        bc = self.bmnc[surfaceIndex, :] 
+        bc = self.bmnc[surfaceIndex, :].copy()
         if not self.ssym:
-            bs = self.bmns[surfaceIndex, :]
+            bs = self.bmns[surfaceIndex, :].copy()
         else:
             bs = np.zeros_like(bc)
         bc[1:-1] = bc[1:-1] / 2
