@@ -4,7 +4,7 @@
 
 
 import numpy as np 
-from ..baseSurfaceProblem import SurfaceProblem_Cylinder
+from ..baseSurfaceProblem import BaseProblem_Cylinder
 from ..toroidalField import ToroidalField
 from ..geometry import Surface_cylindricalAngle 
 from ..toroidalField import derivatePol, derivateTor
@@ -12,7 +12,7 @@ from ..toroidalField import fftToroidalField
 from typing import List
 
 
-class VacuumField(SurfaceProblem_Cylinder):
+class VacuumField(BaseProblem_Cylinder):
 
     def __init__(self, surf: Surface_cylindricalAngle, lambdaField: ToroidalField = None, omegaField: ToroidalField = None, iota: float = 0, stellSym: bool = True) -> None:
         super().__init__(surf, lambdaField, omegaField, iota, stellSym) 

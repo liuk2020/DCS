@@ -10,7 +10,7 @@ from ..toroidalField import derivatePol, derivateTor
 from typing import List
 
 
-class SurfaceProblem_Cylinder: 
+class BaseProblem_Cylinder: 
     
     def __init__(self, surf: Surface_cylindricalAngle, lambdaField: ToroidalField=None, omegaField: ToroidalField=None, iota: float=0.0, stellSym: bool=True) -> None:
         self.surf = surf 
