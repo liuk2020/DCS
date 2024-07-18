@@ -1,17 +1,16 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-# vacuum.py
+# baseproblem.py
 
 
-import numpy as np 
+import numpy as np
 from ..toroidalField import ToroidalField
 from ..geometry import Surface_cylindricalAngle 
 from ..toroidalField import derivatePol, derivateTor
-from ..toroidalField import fftToroidalField
 from typing import List
 
 
-class VacuumField: 
+class BaseSurfaceProblem_Cylinder: 
     
     def __init__(self, surf: Surface_cylindricalAngle, lambdaField: ToroidalField=None, omegaField: ToroidalField=None, iota: float=0.0, stellSym: bool=True) -> None:
         self.surf = surf 
@@ -73,45 +72,6 @@ class VacuumField:
         self.lam.nfp = nfp
         self.omega.nfp = nfp
 
-    def updateCoefficient(self): 
-        self.coefficient = (
-            self.dthetadvartheta*self.dzetadphi 
-            - self.dthetadphi*self.dzetadvartheta
-        )
-
-    def errerField(self) -> ToroidalField: 
-        g_thetatheta, g_thetaphi, g_phiphi = self.surf.metric 
-        return (
-            self.dzetadphi * (self.dthetadphi-self.iota*self.dzetadphi) * g_thetatheta 
-            - (self.dthetadvartheta*self.dzetadphi + self.dthetadphi*self.dzetadvartheta -2*self.iota*self.dzetadvartheta*self.dzetadphi) * g_thetaphi 
-            + self.dzetadvartheta * (self.dthetadvartheta-self.iota*self.dzetadvartheta) * g_phiphi 
-        )
-
-    def gField(self) -> ToroidalField: 
-        g_thetatheta, g_thetaphi, g_phiphi = self.surf.metric 
-        return (
-            self.dthetadphi * (self.dthetadphi-self.iota*self.dzetadphi) * g_thetatheta 
-            - (2*self.dthetadvartheta*self.dthetadphi - self.iota*(self.dthetadvartheta*self.dzetadphi + self.dthetadphi*self.dzetadvartheta)) * g_thetaphi 
-            + self.dthetadvartheta * (self.dthetadvartheta-self.iota*self.dzetadvartheta) * g_phiphi 
-        )
-
-    def bField(self, mpol: int=None, ntor: int=None) -> ToroidalField:
-        if mpol is None:
-            mpol = 2*self.omega.mpol+1
-        if ntor is None:
-            ntor = 2*self.omega.ntor+1
-        deltaTheta = 2*np.pi / (2*mpol+1)
-        deltaZeta = 2*np.pi / self.nfp / (2*ntor+1)
-        sampleTheta, sampleZeta = np.arange(2*mpol+1)*deltaTheta, np.arange(2*ntor+1)*deltaZeta
-        gridSampleZeta, gridSampleTheta = np.meshgrid(sampleZeta, sampleTheta)
-        gField = self.gField()
-        self.updateCoefficient()
-        sampleB = np.power(
-            gField.getValue(gridSampleTheta, gridSampleZeta) / np.power(self.coefficient.getValue(gridSampleTheta, gridSampleZeta), 2), 0.5
-        )
-        return fftToroidalField(sampleB, nfp=self.nfp)
-
-
     def transBoozer(self, valueField: ToroidalField or List[ToroidalField], mpol: int=None, ntor: int=None, **kwargs) -> ToroidalField:
 
         if mpol is None and ntor is None: 
@@ -159,6 +119,104 @@ class VacuumField:
             return ans
         else:
             print("Wrong type of the valuefield... ")
+
+    def writeH5(self, filename: str="vacuumSurf"):
+        import h5py
+        with h5py.File(filename+".h5", 'w') as f:
+            f.create_dataset(
+                "resolution", 
+                data = (self.nfp, int(self.stellSym), self.mpol, self.ntor, self.surf.r.mpol, self.surf.r.ntor, self.surf.z.mpol, self.surf.z.ntor, self.iota), 
+                dtype = "int32"
+            )
+            f.create_group("r")
+            f.create_group("z")
+            f.create_group("lam")
+            f.create_group("omega")
+            f["r"].create_dataset("re", self.surf.r.reArr)
+            f["z"].create_dataset("im", self.surf.z.imArr)
+            f["lam"].create_dataset("im", self.lam.imArr)
+            f["omega"].create_dataset("im", self.omega.imArr)
+            if not self.stellSym:
+                f["r"].create_dataset("im", self.surf.r.imArr)
+                f["z"].create_dataset("re", self.surf.z.reArr)
+                f["lam"].create_dataset("re", self.lam.reArr)
+                f["omega"].create_dataset("re", self.omega.reArr)
+
+    @classmethod
+    def readH5(cls, filename):
+        import h5py
+        with h5py.File(filename, 'r') as f:
+            nfp = int(f["resolution"][0])
+            stellsym = bool(f["resolution"][1])
+            mpol = int(f["resolution"][2])
+            ntor = int(f["resolution"][3])
+            r_mpol = int(f["resolution"][4])
+            r_ntor = int(f["resolution"][5])
+            z_mpol = int(f["resolution"][6])
+            z_ntor = int(f["resolution"][7])
+            iota = float(f["resolution"][8])
+            if stellsym:
+                _r = ToroidalField(
+                    nfp=nfp, mpol=r_mpol, ntor=r_ntor, 
+                    reArr=f["r"]["re"][:], 
+                    imArr=np.zeros_like(f["r"]["re"][:]), 
+                    imIndex=False
+                )
+                _z = ToroidalField(
+                    nfp=nfp, mpol=z_mpol, ntor=z_ntor, 
+                    reArr=np.zeros_like(f["z"]["im"][:]),
+                    imArr=f["z"]["im"][:],  
+                    reIndex=False
+                )
+                _lam = ToroidalField(
+                    nfp=nfp, mpol=mpol, ntor=ntor, 
+                    reArr=np.zeros_like(f["lam"]["im"][:]),
+                    imArr=f["lam"]["im"][:],  
+                    reIndex=False
+                )
+                _omega = ToroidalField(
+                    nfp=nfp, mpol=mpol, ntor=ntor, 
+                    reArr=np.zeros_like(f["omega"]["im"][:]),
+                    imArr=f["omega"]["im"][:],  
+                    reIndex=False
+                )
+            else:
+                _r = ToroidalField(
+                    nfp=nfp, mpol=r_mpol, ntor=r_ntor, 
+                    reArr=f["r"]["re"][:], 
+                    imArr=f["r"]["im"][:]
+                )
+                _z = ToroidalField(
+                    nfp=nfp, mpol=z_mpol, ntor=z_ntor, 
+                    reArr=f["z"]["re"][:],
+                    imArr=f["z"]["im"][:] 
+                )
+                _lam = ToroidalField(
+                    nfp=nfp, mpol=mpol, ntor=ntor, 
+                    reArr=f["lam"]["re"][:],
+                    imArr=f["lam"]["im"][:] 
+                )
+                _omega = ToroidalField(
+                    nfp=nfp, mpol=mpol, ntor=ntor, 
+                    reArr=f["omega"]["re"][:],
+                    imArr=f["omega"]["im"][:]
+                )
+        _vaccumSurf = cls(Surface_cylindricalAngle(_r,_z), mpol=mpol, ntor=ntor, iota=iota, stellsym=stellsym)
+        _vaccumSurf.updateLam(_lam)
+        _vaccumSurf.updateOmega(_omega)
+        _vaccumSurf.updateIota(iota)
+        return _vaccumSurf
+
+    @classmethod
+    def init_VMECOutput(cls, vmec_out: str, surfaceIndex: int=-1, ssym: bool=True):
+        from ..vmec import VMECOut
+        vmeclib = VMECOut(vmec_out, ssym=ssym)
+        surf, lam = vmeclib.getSurface(surfaceIndex)
+        omega = vmeclib.getOmega(surfaceIndex)
+        iota = vmeclib.iota(surfaceIndex)
+        surfProblem = cls(surf, lam, omega, iota, ssym)
+        return surfProblem
+
 
 
 if __name__ == "__main__": 
