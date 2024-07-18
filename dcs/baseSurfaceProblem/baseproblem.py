@@ -74,9 +74,16 @@ class BaseProblem_Cylinder:
 
     def transBoozer(self, valueField: ToroidalField or List[ToroidalField], mpol: int=None, ntor: int=None, **kwargs) -> ToroidalField:
 
+        from collections import Iterable
         if mpol is None and ntor is None: 
-            mpol = valueField.mpol + max(self.omega.mpol, self.lam.mpol) 
-            ntor = valueField.ntor + max(self.omega.ntor, self.lam.ntor) 
+            if isinstance(valueField, ToroidalField):
+                mpol = valueField.mpol + max(self.omega.mpol, self.lam.mpol)
+                ntor = valueField.ntor + max(self.omega.ntor, self.lam.ntor)
+            elif isinstance(valueField, Iterable) and isinstance(valueField[0], ToroidalField):
+                mpol = valueField[0].mpol + max(self.omega.mpol, self.lam.mpol) 
+                ntor = valueField[0].ntor + max(self.omega.ntor, self.lam.ntor)
+            else:
+                print("Wrong type of the valuefield... ")
         sampleTheta = np.linspace(0, 2*np.pi, 2*mpol+1, endpoint=False) 
         sampleZeta = -np.linspace(0, 2*np.pi/self.nfp, 2*ntor+1, endpoint=False) 
         gridSampleZeta, gridSampleTheta = np.meshgrid(sampleZeta, sampleTheta) 
@@ -106,7 +113,6 @@ class BaseProblem_Cylinder:
                 gridVartheta[i,j] = float(varthetaphi[0,0])
                 gridVarphi[i,j] = float(varthetaphi[1,0])
         
-        from collections import Iterable
         from ..toroidalField import fftToroidalField
         if isinstance(valueField, ToroidalField):
             sampleValue = valueField.getValue(gridVartheta, gridVarphi)
