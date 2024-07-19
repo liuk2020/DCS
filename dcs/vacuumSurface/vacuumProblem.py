@@ -4,7 +4,6 @@
 
 
 import logging
-import h5py
 import numpy as np
 from .vacuum import VacuumField 
 from ..toroidalField import ToroidalField

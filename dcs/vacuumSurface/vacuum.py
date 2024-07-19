@@ -7,9 +7,7 @@ import numpy as np
 from ..baseSurfaceProblem import BaseProblem_Cylinder
 from ..toroidalField import ToroidalField
 from ..geometry import Surface_cylindricalAngle 
-from ..toroidalField import derivatePol, derivateTor
 from ..toroidalField import fftToroidalField
-from typing import List
 
 
 class VacuumField(BaseProblem_Cylinder):
