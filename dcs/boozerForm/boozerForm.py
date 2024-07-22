@@ -11,8 +11,10 @@ from ..geometry import Surface_BoozerAngle
 
 class BoozerForm(Booz_xform): 
     
-    def __init__(self) -> None:
+    def __init__(self, fileName: str) -> None:
         super().__init__()
+        self.verbose = 0
+        self.read_boozmn(fileName)
 
     def surface(self, surfaceIndex: int=-1, asym: bool=True, reverseToroidal: bool=False, reverseOmegaAngle:bool=True) -> Surface_BoozerAngle: 
         nfp = int(self.nfp)
