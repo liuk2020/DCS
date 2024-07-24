@@ -24,7 +24,6 @@ class VacuumProblem(VacuumField):
         logfile: str="log",
         logscreen: bool=True
     ) -> None:
-        self.mpol, self.ntor = mpol, ntor
         _lam = ToroidalField.constantField(0, nfp=surf.nfp, mpol=mpol, ntor=ntor)
         _lam.reIndex, _lam.imIndex = False, True
         _omega = ToroidalField.constantField(0, nfp=surf.nfp, mpol=mpol, ntor=ntor)
@@ -54,6 +53,14 @@ class VacuumProblem(VacuumField):
         self._iotaIndex = 3
 
     @property
+    def mpol(self) -> int:
+        return self.lam.mpol
+    
+    @property
+    def ntor(self) -> int:
+        return self.lam.ntor
+
+    @property
     def initDOFs(self) -> np.ndarray:
         dofs = [self.iota*self._iotaIndex]
         for index, value in enumerate(self.lam.imArr[1: ]):
@@ -72,8 +79,8 @@ class VacuumProblem(VacuumField):
         return np.array(dofs)
 
     def updateResolution(self, mpol: int, ntor: int):
-        self.mpol = mpol
-        self.ntor = ntor
+        # self.mpol = mpol
+        # self.ntor = ntor
         self.lam = changeResolution(self.lam, mpol=mpol, ntor=ntor)
         self.omega = changeResolution(self.omega, mpol=mpol, ntor=ntor)
 
