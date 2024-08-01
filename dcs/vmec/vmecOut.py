@@ -17,8 +17,12 @@ class VMECOut():
         self.keys = [key for key in _vmeclib.data_vars] 
         for key in self.keys:
             setattr(self, key, _vmeclib[key].values)
+        self.ns = int(self.ns)
         self.nfp = int(self.nfp) 
         self.ssym = ssym
+
+    # plot functions
+    from ._plotIota import plotProfile
 
     def getSurface(self, surfaceIndex: int=-1, reverseToroidal: bool=True) -> Tuple:
         """
@@ -245,6 +249,7 @@ class VMECOut():
                 _omega.setRe(m, n, -overG.getIm(m,n)/n/self.nfp)  
                 _omega.setIm(m, n, -overG.getRe(m,n)/n/self.nfp)
         return _omega * (-1/(iota*curI+curG))
+
 
 if __name__ == "__main__":
     pass
