@@ -62,20 +62,20 @@ class VacuumProblem(VacuumField):
 
     @property
     def initDOFs(self) -> np.ndarray:
-        dofs = [self.iota*self._iotaIndex]
+        dofs = [self.iota/self._iotaIndex]
         for index, value in enumerate(self.lam.imArr[1: ]):
             m, n = self.lam.indexReverseMap(index+1)
-            dofs.append(value * pow(self._powerIndex,abs(m)+abs(n)))
+            dofs.append(value / pow(self._powerIndex,abs(m)+abs(n)))
         for index, value in enumerate(self.omega.imArr[1: ]):
             m, n = self.omega.indexReverseMap(index+1)
-            dofs.append(value * pow(self._powerIndex,abs(m)+abs(n)))
+            dofs.append(value / pow(self._powerIndex,abs(m)+abs(n)))
         if not self.stellSym:
             for index, value in enumerate(self.lam.reArr[1: ]):
                 m, n = self.lam.indexReverseMap(index+1)
-                dofs.append(value * pow(self._powerIndex,abs(m)+abs(n)))
+                dofs.append(value / pow(self._powerIndex,abs(m)+abs(n)))
             for index, value in enumerate(self.omega.reArr[1: ]):
                 m, n = self.omega.indexReverseMap(index+1)
-                dofs.append(value * pow(self._powerIndex,abs(m)+abs(n)))
+                dofs.append(value / pow(self._powerIndex,abs(m)+abs(n)))
         return np.array(dofs)
 
     def updateResolution(self, mpol: int, ntor: int):
@@ -90,20 +90,20 @@ class VacuumProblem(VacuumField):
             assert dofs.size == 2*length + 1
         else:
             assert dofs.size == 4*length + 1
-        self.updateIota(dofs[0]/self._iotaIndex)
+        self.updateIota(dofs[0]*self._iotaIndex)
         for index in range(1, length+1):
             m, n = self.lam.indexReverseMap(index)
-            self.lam.setIm(m, n, dofs[index]/pow(self._powerIndex,abs(m)+abs(n)))
+            self.lam.setIm(m, n, dofs[index]*pow(self._powerIndex,abs(m)+abs(n)))
         for index in range(length+1, 2*length+1):
             m, n = self.omega.indexReverseMap(index-length)
-            self.omega.setIm(m, n, dofs[index]/pow(self._powerIndex,abs(m)+abs(n)))
+            self.omega.setIm(m, n, dofs[index]*pow(self._powerIndex,abs(m)+abs(n)))
         if not self.stellSym:
             for index in range(2*length+1, 3*length+1):
                 m, n = self.lam.indexReverseMap(index-2*length)
-                self.lam.setRe(m, n, dofs[index]/pow(self._powerIndex,abs(m)+abs(n)))
+                self.lam.setRe(m, n, dofs[index]*pow(self._powerIndex,abs(m)+abs(n)))
             for index in range(3*length+1, 4*length+1):
                 m, n = self.omega.indexReverseMap(index-3*length)
-                self.omega.setRe(m,n,dofs[index]/pow(self._powerIndex,abs(m)+abs(n)))
+                self.omega.setRe(m,n,dofs[index]*pow(self._powerIndex,abs(m)+abs(n)))
 
     def solve(self, 
         type: str="minimize",
