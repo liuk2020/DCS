@@ -22,7 +22,8 @@ class VacuumProblem(VacuumField):
         iota: float=0.0, 
         stellSym: bool=True,
         logfile: str="log",
-        logscreen: bool=True
+        logscreen: bool=True,
+        fixIota: bool=False
     ) -> None:
         _lam = ToroidalField.constantField(0, nfp=surf.nfp, mpol=mpol, ntor=ntor)
         _lam.reIndex, _lam.imIndex = False, True
@@ -31,6 +32,7 @@ class VacuumProblem(VacuumField):
         super().__init__(surf, _lam, _omega, iota, stellSym) 
         self.updateStellSym(stellSym)
         self._init_log(logfile, logscreen)
+        self.fixIota = fixIota
         self.logger.info("Problem initialization is done... ")
         self._init_paras()
 
@@ -49,8 +51,8 @@ class VacuumProblem(VacuumField):
             sh.setLevel(logging.INFO)
 
     def _init_paras(self): 
-        self._powerIndex = 1.3
-        self._iotaIndex = 3
+        self._powerIndex = 1.1
+        self._iotaIndex = 50
 
     @property
     def mpol(self) -> int:
@@ -62,7 +64,8 @@ class VacuumProblem(VacuumField):
 
     @property
     def initDOFs(self) -> np.ndarray:
-        dofs = [self.iota/self._iotaIndex]
+        # dofs = [self.iota/self._iotaIndex]
+        dofs = list()
         for index, value in enumerate(self.lam.imArr[1: ]):
             m, n = self.lam.indexReverseMap(index+1)
             dofs.append(value / pow(self._powerIndex,abs(m)+abs(n)))
@@ -76,6 +79,8 @@ class VacuumProblem(VacuumField):
             for index, value in enumerate(self.omega.reArr[1: ]):
                 m, n = self.omega.indexReverseMap(index+1)
                 dofs.append(value / pow(self._powerIndex,abs(m)+abs(n)))
+        if  not self.fixIota:
+            dofs.append(self.iota/self._iotaIndex)
         return np.array(dofs)
 
     def updateResolution(self, mpol: int, ntor: int):
@@ -87,22 +92,29 @@ class VacuumProblem(VacuumField):
     def unpackDOFs(self, dofs: np.ndarray):
         length = (2*self.ntor+1)*self.mpol + self.ntor
         if self.stellSym:
-            assert dofs.size == 2*length + 1
+            if not self.fixIota:
+                assert dofs.size == 2*length + 1
+            else:
+                dofs.size == 2*length
         else:
-            assert dofs.size == 4*length + 1
-        self.updateIota(dofs[0]*self._iotaIndex)
-        for index in range(1, length+1):
-            m, n = self.lam.indexReverseMap(index)
+            if not self.fixIota:
+                assert dofs.size == 4*length + 1
+            else:
+                assert dofs.size == 4*length
+        if not self.fixIota:
+            self.updateIota(dofs[-1]*self._iotaIndex)
+        for index in range(0, length):
+            m, n = self.lam.indexReverseMap(index+1)
             self.lam.setIm(m, n, dofs[index]*pow(self._powerIndex,abs(m)+abs(n)))
-        for index in range(length+1, 2*length+1):
-            m, n = self.omega.indexReverseMap(index-length)
+        for index in range(length, 2*length):
+            m, n = self.omega.indexReverseMap(index-length+1)
             self.omega.setIm(m, n, dofs[index]*pow(self._powerIndex,abs(m)+abs(n)))
         if not self.stellSym:
-            for index in range(2*length+1, 3*length+1):
-                m, n = self.lam.indexReverseMap(index-2*length)
+            for index in range(2*length, 3*length):
+                m, n = self.lam.indexReverseMap(index-2*length+1)
                 self.lam.setRe(m, n, dofs[index]*pow(self._powerIndex,abs(m)+abs(n)))
-            for index in range(3*length+1, 4*length+1):
-                m, n = self.omega.indexReverseMap(index-3*length)
+            for index in range(3*length, 4*length):
+                m, n = self.omega.indexReverseMap(index-3*length+1)
                 self.omega.setRe(m,n,dofs[index]*pow(self._powerIndex,abs(m)+abs(n)))
 
     def solve(self, 
@@ -150,8 +162,9 @@ class VacuumProblem(VacuumField):
             if self.niter%nStep == 0:
                 self.logger.info("{:<10d} {:<16f} {:<16e}".format(self.niter, self.iota, cost(xi,norm=True)))
         g_thetatheta, g_thetaphi, g_phiphi = self.surf.metric 
-        _iota = - g_thetaphi.getRe(0,0) / g_thetatheta.getRe(0,0)
-        self.updateIota(_iota)
+        if not self.fixIota:
+            _iota = - g_thetaphi.getRe(0,0) / g_thetatheta.getRe(0,0)
+            self.updateIota(_iota)
         self.logger.info(f"Initial iota: {_iota}")
         self.logger.info("{:<10} {:<16} {:<16}".format('niter', 'iota', 'residuals')) 
         self.logger.info("{:<10d} {:<16f} {:<16e}".format(0, self.iota, cost(self.initDOFs,norm=True)))
