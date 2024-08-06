@@ -21,7 +21,9 @@ class VacuumProblem(VacuumField):
         ntor: int,
         iota: float=0.0, 
         stellSym: bool=True,
-        fixIota: bool=False
+        fixIota: bool=False,
+        logfile: str="log",
+        logscreen: bool=True,
     ) -> None:
         _lam = ToroidalField.constantField(0, nfp=surf.nfp, mpol=mpol, ntor=ntor)
         _lam.reIndex, _lam.imIndex = False, True
@@ -31,6 +33,8 @@ class VacuumProblem(VacuumField):
         self.updateStellSym(stellSym)
         self.fixIota = fixIota
         self._init_paras()
+        self._init_log(logfile, logscreen)
+        self.logger.info("Problem initialization is done... ")
 
     def _init_log(self, logfile, logscreen) -> None:
         self.logger = logging.getLogger('my logger')
@@ -116,8 +120,6 @@ class VacuumProblem(VacuumField):
     def solve(self, 
         type: str="minimize",
         nStep: int=10,
-        logfile: str="log",
-        logscreen: bool=True,
         **kwargs
     ):
         r"""
@@ -126,8 +128,6 @@ class VacuumProblem(VacuumField):
             `type`: type of solver.  Should be "minimize" or "root" 
             `nStep`: number of the steps at log output
         """
-        self._init_log(logfile, logscreen)
-        self.logger.info("Problem initialization is done... ")
         self.logger.info(f"The resolution of the geometry:     mpol={max(self.surf.r.mpol,self.surf.z.mpol)}, ntor={max(self.surf.r.ntor,self.surf.z.ntor)}")
         self.logger.info(f"The resolution of lambda and omega: mpol={self.mpol}, ntor={self.ntor}")
         if  max(self.surf.r.ntor,self.surf.z.ntor) == 0:
