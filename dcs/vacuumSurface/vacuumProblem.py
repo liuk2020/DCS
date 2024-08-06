@@ -165,7 +165,7 @@ class VacuumProblem(VacuumField):
         if not self.fixIota:
             _iota = - g_thetaphi.getRe(0,0) / g_thetatheta.getRe(0,0)
             self.updateIota(_iota)
-        self.logger.info(f"Initial iota: {_iota}")
+        self.logger.info(f"Initial iota: {self.iota}")
         self.logger.info("{:<10} {:<16} {:<16}".format('niter', 'iota', 'residuals')) 
         self.logger.info("{:<10d} {:<16f} {:<16e}".format(0, self.iota, cost(self.initDOFs,norm=True)))
         if type == "minimize":
