@@ -138,15 +138,15 @@ class BaseProblem_Cylinder:
             f.create_group("z")
             f.create_group("lam")
             f.create_group("omega")
-            f["r"].create_dataset("re", self.surf.r.reArr)
-            f["z"].create_dataset("im", self.surf.z.imArr)
-            f["lam"].create_dataset("im", self.lam.imArr)
-            f["omega"].create_dataset("im", self.omega.imArr)
+            f["r"].create_dataset("re", data=self.surf.r.reArr)
+            f["z"].create_dataset("im", data=self.surf.z.imArr)
+            f["lam"].create_dataset("im", data=self.lam.imArr)
+            f["omega"].create_dataset("im", data=self.omega.imArr)
             if not self.stellSym:
-                f["r"].create_dataset("im", self.surf.r.imArr)
-                f["z"].create_dataset("re", self.surf.z.reArr)
-                f["lam"].create_dataset("re", self.lam.reArr)
-                f["omega"].create_dataset("re", self.omega.reArr)
+                f["r"].create_dataset("im", data=self.surf.r.imArr)
+                f["z"].create_dataset("re", data=self.surf.z.reArr)
+                f["lam"].create_dataset("re", data=self.lam.reArr)
+                f["omega"].create_dataset("re", data=self.omega.reArr)
 
     @classmethod
     def readH5(cls, filename):
