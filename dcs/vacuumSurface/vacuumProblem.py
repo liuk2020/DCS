@@ -37,7 +37,8 @@ class VacuumProblem(VacuumField):
         self.logger.info("Problem initialization is done... ")
 
     def _init_log(self, logfile, logscreen) -> None:
-        self.logger = logging.getLogger('my logger')
+        import time
+        self.logger = logging.getLogger(str(time.time()))
         self.logger.setLevel(logging.DEBUG)
         fh = logging.FileHandler(logfile+".txt", mode='w', encoding='utf-8')
         fmt = logging.Formatter(fmt = "%(asctime)s  - %(message)s")
@@ -51,7 +52,7 @@ class VacuumProblem(VacuumField):
             sh.setLevel(logging.INFO)
 
     def _init_paras(self): 
-        self._powerIndex = 1.1
+        self._powerIndex = 0.97
         self._iotaIndex = 50
 
     @property
