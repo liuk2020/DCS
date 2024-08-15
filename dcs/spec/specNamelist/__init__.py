@@ -1,1 +1,0 @@
-from .specNamelist import SPECNamelist

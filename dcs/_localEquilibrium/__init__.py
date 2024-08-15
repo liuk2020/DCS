@@ -1,2 +1,0 @@
-from .straightSurface import StraightSurfaceField
-from .arbitrarySurface import ArbitrarySurfaceField
