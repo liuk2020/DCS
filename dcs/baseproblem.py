@@ -35,9 +35,9 @@ class SurfProblem(Surface_BoozerAngle):
                 self.updateIota(0.0)
             else:
                 self._iota = iota
-        elif (mpol is None) or (ntor is None) or (nfp is None):
-            assert r is not None
-            mpol, ntor, nfp = r.mpol, r.ntor, r.nfp
+        else:
+            if mpol is None or ntor is None:
+                mpol, ntor = r.mpol, r.ntor
             self._mpol, self._ntor = mpol, ntor
             super().__init__(changeResolution(r,mpol,ntor), changeResolution(z,mpol,ntor), changeResolution(omega,2*mpol,2*ntor), reverseToroidalAngle, reverseOmegaAngle)
             if iota is None:
