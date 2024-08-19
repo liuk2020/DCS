@@ -46,7 +46,7 @@ class SurfProblem(Surface_BoozerAngle):
                 self._iota = iota
         self.fixIota = fixIota
         self._init_dofs()
-        self._init_paras()
+        # self._init_paras()
 
     def _init_iota(self):
         guu, guv, gvv = self.metric
