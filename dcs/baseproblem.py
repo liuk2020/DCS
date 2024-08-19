@@ -25,7 +25,7 @@ class SurfProblem(Surface_BoozerAngle):
     ) -> None:
         if (r is None) or (z is None) or (omega is None):
             assert mpol and ntor and nfp
-            self.mpol, self.ntor = mpol, ntor
+            self._mpol, self._ntor = mpol, ntor
             r = ToroidalField.constantField(1, nfp=nfp, mpol=mpol, ntor=ntor) 
             z = ToroidalField.constantField(0, nfp=nfp, mpol=mpol, ntor=ntor)
             omega = ToroidalField.constantField(0, nfp=nfp, mpol=2*mpol, ntor=2*ntor)
@@ -38,7 +38,7 @@ class SurfProblem(Surface_BoozerAngle):
         elif (mpol is None) or (ntor is None) or (nfp is None):
             assert r is not None
             mpol, ntor, nfp = r.mpol, r.ntor, r.nfp
-            self.mpol, self.ntor = mpol, ntor
+            self._mpol, self._ntor = mpol, ntor
             super().__init__(changeResolution(r,mpol,ntor), changeResolution(z,mpol,ntor), changeResolution(omega,2*mpol,2*ntor), reverseToroidalAngle, reverseOmegaAngle)
             if iota is None:
                 self._init_iota()
@@ -80,7 +80,7 @@ class SurfProblem(Surface_BoozerAngle):
         self.r.setRe(0, 0, majorRadius)
 
     def changeResolution(self, mpol: int, ntor: int):
-        self.mpol, self.ntor = mpol, ntor
+        self._mpol, self._ntor = mpol, ntor
         self.r = changeResolution(self.r, mpol, ntor)
         self.z = changeResolution(self.z, mpol, ntor)
         self.omega = changeResolution(self.omega, 2*mpol, 2*ntor)
