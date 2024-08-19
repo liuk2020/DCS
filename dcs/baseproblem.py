@@ -31,22 +31,26 @@ class SurfProblem(Surface_BoozerAngle):
             omega = ToroidalField.constantField(0, nfp=nfp, mpol=2*mpol, ntor=2*ntor)
             super().__init__(r, z, omega, reverseToroidalAngle, reverseOmegaAngle)
             self.changeStellSym(True)
+            if iota is None:
+                self.updateIota(0.0)
+            else:
+                self._iota = iota
         elif (mpol is None) or (ntor is None) or (nfp is None):
             assert r is not None
             mpol, ntor, nfp = r.mpol, r.ntor, r.nfp
             self.mpol, self.ntor = mpol, ntor
             super().__init__(changeResolution(r,mpol,ntor), changeResolution(z,mpol,ntor), changeResolution(omega,2*mpol,2*ntor), reverseToroidalAngle, reverseOmegaAngle)
-        if iota is None:
-            self._init_iota()
-        else:
-            self._iota = iota
+            if iota is None:
+                self._init_iota()
+            else:
+                self._iota = iota
         self.fixIota = fixIota
         self._init_dofs()
         self._init_paras()
 
     def _init_iota(self):
         guu, guv, gvv = self.metric
-        self._iota = -guu.getRe(0,0)/guv.getRe(0,0)
+        self._iota = -guv.getRe(0,0)/guu.getRe(0,0)
     
     def _init_dofs(self):
         self.doflabels = {}

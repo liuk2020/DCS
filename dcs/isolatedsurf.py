@@ -15,7 +15,7 @@ class IsolatedSurface(SurfProblem):
     def BoozerResidual(self) -> ToroidalField:
         guu, guv, _ = self.metric
         if not self.fixIota:
-            self.updateIota(-guu.getRe(0,0)/guv.getRe(0,0))
+            self.updateIota(-guv.getRe(0,0)/guu.getRe(0,0))
         return guv + self.iota*guu
 
     def solve(self, **kwargs):
