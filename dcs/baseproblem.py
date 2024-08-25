@@ -20,8 +20,8 @@ class SurfProblem(Surface_BoozerAngle):
         nfp: int=None,
         iota: float=None,
         fixIota: bool=False, 
-        reverseToroidalAngle: bool = True, 
-        reverseOmegaAngle: bool = False
+        reverseToroidalAngle: bool = False, 
+        reverseOmegaAngle: bool = True
     ) -> None:
         if (r is None) or (z is None) or (omega is None):
             assert mpol and ntor and nfp
