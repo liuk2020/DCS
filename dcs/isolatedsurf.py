@@ -29,7 +29,7 @@ class IsolatedSurface(SurfProblem):
         print(f'########### The nfp is {self.nfp} ')
         print(f'########### The resolution of the R and Z:  mpol={self.mpol}, ntor={self.ntor} ')
         print(f'########### The resolution of the residual:  mpol={initResidual.mpol}, ntor={initResidual.ntor} ')
-        print("{:>8} {:>16} {:>18}".format('niter', 'iota', 'resdual_Boozer'))
+        print("{:>8} {:>16} {:>18}".format('niter', 'iota', 'residual_Boozer'))
         print("{:>8d} {:>16f} {:>18e}".format(0, self.iota, np.linalg.norm(np.hstack((initResidual.reArr, initResidual.imArr)))))
         def cost(dofs):
             self.unpackDOF(dofs)
