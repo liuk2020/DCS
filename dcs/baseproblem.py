@@ -46,7 +46,7 @@ class SurfProblem(Surface_BoozerAngle):
                 self._iota = iota
         self.fixIota = fixIota
         self._init_dofs()
-        # self._init_paras()
+        self._init_paras()
 
     def _init_iota(self):
         guu, guv, gvv = self.metric
@@ -177,13 +177,13 @@ class SurfProblem(Surface_BoozerAngle):
                 if label:
                     if key == 'rc':
                         m, n = self.r.indexReverseMap(i+1)
-                        dofs[dofindex] = self.r.getRe(m,n)
+                        dofs[dofindex] = self.r.getRe(m,n) / pow(self._powerIndex,abs(m)+abs(n))
                     elif key == 'zs':
                         m, n = self.z.indexReverseMap(i+1)
-                        dofs[dofindex] = self.z.getIm(m,n)
+                        dofs[dofindex] = self.z.getIm(m,n) / pow(self._powerIndex,abs(m)+abs(n))
                     elif key == 'omegas':
                         m, n = self.omega.indexReverseMap(i+1)
-                        dofs[dofindex] = self.omega.getIm(m,n)
+                        dofs[dofindex] = self.omega.getIm(m,n) / pow(self._powerIndex,abs(m)+abs(n))
                     dofindex += 1
         if not self.stellSym:
             for key in ['rs', 'zc', 'omegac']:
@@ -191,13 +191,13 @@ class SurfProblem(Surface_BoozerAngle):
                     if label:
                         if key == 'rs':
                             m, n = self.r.indexReverseMap(i+1)
-                            dofs[dofindex] = self.r.getIm(m,n)
+                            dofs[dofindex] = self.r.getIm(m,n) / pow(self._powerIndex,abs(m)+abs(n))
                         elif key == 'zc':
                             m, n = self.z.indexReverseMap(i+1)
-                            dofs[dofindex] = self.z.getRe(m,n)
+                            dofs[dofindex] = self.z.getRe(m,n) / pow(self._powerIndex,abs(m)+abs(n))
                         elif key == 'omegac':
                             m, n = self.omega.indexReverseMap(i+1)
-                            dofs[dofindex] = self.omega.getRe(m,n)
+                            dofs[dofindex] = self.omega.getRe(m,n) / pow(self._powerIndex,abs(m)+abs(n))
                         dofindex += 1
         return dofs
 
@@ -209,13 +209,13 @@ class SurfProblem(Surface_BoozerAngle):
                 if label:
                     if key == 'rc':
                         m, n = self.r.indexReverseMap(i+1)
-                        self.r.setRe(m,n,dofs[dofindex])
+                        self.r.setRe(m,n,dofs[dofindex]*pow(self._powerIndex,abs(m)+abs(n)))
                     elif key == 'zs':
                         m, n = self.z.indexReverseMap(i+1)
-                        self.z.setIm(m,n,dofs[dofindex])
+                        self.z.setIm(m,n,dofs[dofindex]*pow(self._powerIndex,abs(m)+abs(n)))
                     elif key == 'omegas':
                         m, n = self.omega.indexReverseMap(i+1)
-                        self.omega.setIm(m,n,dofs[dofindex])
+                        self.omega.setIm(m,n,dofs[dofindex]*pow(self._powerIndex,abs(m)+abs(n)))
                     dofindex += 1
         if not self.stellSym:
             for key in ['rs', 'zc', 'omegac']:
@@ -223,13 +223,13 @@ class SurfProblem(Surface_BoozerAngle):
                     if label:
                         if key == 'rs':
                             m, n = self.r.indexReverseMap(i+1)
-                            self.r.setIm(m,n,dofs[dofindex])
+                            self.r.setIm(m,n,dofs[dofindex]*pow(self._powerIndex,abs(m)+abs(n)))
                         elif key == 'zc':
                             m, n = self.z.indexReverseMap(i+1)
-                            self.z.setRe(m,n,dofs[dofindex])
+                            self.z.setRe(m,n,dofs[dofindex]*pow(self._powerIndex,abs(m)+abs(n)))
                         elif key == 'omegac':
                             m, n = self.omega.indexReverseMap(i+1)
-                            self.omega.setRe(m,n,dofs[dofindex])
+                            self.omega.setRe(m,n,dofs[dofindex]*pow(self._powerIndex,abs(m)+abs(n)))
                         dofindex += 1
         return
 
