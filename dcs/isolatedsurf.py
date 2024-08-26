@@ -45,7 +45,8 @@ class IsolatedSurface(SurfProblem):
         res = minimize(cost, self.initDOFs, callback=callback, **kwargs)
         if self.niter%nstep != 0:
             print("{:>8d} {:>16f} {:>18e}".format(self.niter, self.iota, cost(self.initDOFs)))
-        print(res.message)
+        if not res.success:
+            print('Warning: ' + res.message)
 
 
 if __name__ == '__main__':
