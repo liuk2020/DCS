@@ -148,21 +148,21 @@ class SurfProblem(Surface_BoozerAngle):
         assert m<self.r.mpol and n<self.r.ntor
         for i, label in enumerate(self.doflabels['rc']):
             _m ,_n = self.r.indexReverseMap(i+1)
-            if _m<m or _n<n:
+            if _m>m or _n>n:
                 self.doflabels['rc'][i] = False
 
     def fixTruncation_zs(self, m: int, n: int):
         assert m<self.z.mpol and n<self.z.ntor
         for i, label in enumerate(self.doflabels['zs']):
             _m ,_n = self.z.indexReverseMap(i+1)
-            if _m<m or _n<n:
+            if _m>m or _n>n:
                 self.doflabels['zs'][i] = False
 
     def fixTruncation_omegas(self, m: int, n: int):
         assert m<self.omega.mpol and n<self.omega.ntor
         for i, label in enumerate(self.doflabels['omegas']):
             _m ,_n = self.omega.indexReverseMap(i+1)
-            if _m<m or _n<n:
+            if _m>m or _n>n:
                 self.doflabels['omegas'][i] = False
 
     def fixDOF(self, dof: str, m: int=0, n: int=0):
