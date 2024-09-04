@@ -22,29 +22,45 @@ class IsolatedSurface(SurfProblem):
         print('============================================================================================')
         print(f'########### The number of DOFs is {self.numsDOF} ')
         if kwargs.get('method') == None:
-            kwargs.update({'method': 'BFGS'})
+            kwargs.update({'method': 'CG'})
         print('########### The method in the minimization process is ' + kwargs.get('method'))
-        self.niter = 0
         initResidual = self.BoozerResidual()
         print(f'########### The nfp is {self.nfp} ')
         print(f'########### The resolution of the R and Z:  mpol={self.mpol}, ntor={self.ntor} ')
         print(f'########### The resolution of the residual:  mpol={initResidual.mpol}, ntor={initResidual.ntor}, total={len(initResidual.reArr)} ')
-        print("{:>8} {:>16} {:>18}".format('niter', 'iota', 'residual_Boozer'))
-        print("{:>8d} {:>16f} {:>18e}".format(0, self.iota, np.linalg.norm(np.hstack((initResidual.reArr, initResidual.imArr)))))
         def cost(dofs):
             self.unpackDOF(dofs)
             residualField = self.BoozerResidual()
             return np.linalg.norm(np.hstack((residualField.reArr, residualField.imArr)))
-        def callback(xi):
-            self.niter += 1
-            if self.niter%nstep == 0:
-                print("{:>8d} {:>16f} {:>18e}".format(self.niter, self.iota, cost(xi)))
         from scipy.optimize import minimize
-        if kwargs.get('tol') == None:
-            kwargs.update({'tol': 1e-3})
-        res = minimize(cost, self.initDOFs, callback=callback, **kwargs)
-        if self.niter%nstep != 0:
-            print("{:>8d} {:>16f} {:>18e}".format(self.niter, self.iota, cost(self.initDOFs)))
+        if kwargs.get('method') == 'CG':
+            if kwargs.get('tol') == None:
+                kwargs.update({'tol': 1e-3})
+            self.niter = 0
+            print("{:>8} {:>16} {:>18}".format('niter', 'iota', 'residual_Boozer'))
+            print("{:>8d} {:>16f} {:>18e}".format(0, self.iota, np.linalg.norm(np.hstack((initResidual.reArr, initResidual.imArr)))))
+            def callback(xi):
+                self.niter += 1
+                if self.niter%nstep == 0:
+                    print("{:>8d} {:>16f} {:>18e}".format(self.niter, self.iota, cost(xi)))
+            res = minimize(cost, self.initDOFs, callback=callback, **kwargs)
+            if self.niter%nstep != 0:
+                print("{:>8d} {:>16f} {:>18e}".format(self.niter, self.iota, cost(self.initDOFs)))
+        elif kwargs.get('method') == 'trust-constr':
+            res = minimize(cost, self.initDOFs, options={'verbose':3}, **kwargs)
+        else:
+            if kwargs.get('tol') == None:
+                kwargs.update({'tol': 1e-3})
+            self.niter = 0
+            print("{:>8} {:>16} {:>18}".format('niter', 'iota', 'residual_Boozer'))
+            print("{:>8d} {:>16f} {:>18e}".format(0, self.iota, np.linalg.norm(np.hstack((initResidual.reArr, initResidual.imArr)))))
+            def callback(xi):
+                self.niter += 1
+                if self.niter%nstep == 0:
+                    print("{:>8d} {:>16f} {:>18e}".format(self.niter, self.iota, cost(xi)))
+            res = minimize(cost, self.initDOFs, callback=callback, **kwargs)
+            if self.niter%nstep != 0:
+                print("{:>8d} {:>16f} {:>18e}".format(self.niter, self.iota, cost(self.initDOFs)))
         if not res.success:
             print('Warning: ' + res.message)
 
