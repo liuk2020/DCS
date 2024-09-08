@@ -56,11 +56,11 @@ class SurfProblem(Surface_BoozerAngle):
         self.doflabels = {}
         self.doflabels['rc'] = [False for i in range(self.mpol*(2*self.ntor+1)+self.ntor)]
         self.doflabels['zs'] = [False for i in range(self.mpol*(2*self.ntor+1)+self.ntor)]
-        self.doflabels['omegas'] = [False for i in range(self.mpol*(2*self.ntor+1)+2*self.ntor)]
+        self.doflabels['omegas'] = [False for i in range(self.mpol*(2*self.ntor+1)+self.ntor)]
         if not self.stellSym:
             self.doflabels['rs'] = [False for i in range(self.mpol*(2*self.ntor+1)+self.ntor)]
             self.doflabels['zc'] = [False for i in range(self.mpol*(2*self.ntor+1)+self.ntor)]
-            self.doflabels['omegac'] = [False for i in range(self.mpol*(2*self.ntor+1)+2*self.ntor)]
+            self.doflabels['omegac'] = [False for i in range(self.mpol*(2*self.ntor+1)+self.ntor)]
 
     def _init_paras(self):
         self._powerIndex = 0.97
