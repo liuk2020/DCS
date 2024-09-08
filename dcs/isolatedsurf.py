@@ -31,14 +31,21 @@ class IsolatedSurface(SurfProblem):
         def cost(dofs):
             self.unpackDOF(dofs)
             residualField = self.BoozerResidual()
-            return np.linalg.norm(np.hstack((residualField.reArr, residualField.imArr)))
+            numsTheta, numsZeta = 64, 64
+            deltaTheta, deltaZeta = 2*np.pi/numsTheta, 2*np.pi/self.nfp/numsZeta
+            thetaArr = np.linspace(deltaTheta/2, 2*np.pi-deltaTheta/2, numsTheta)
+            zetaArr = np.linspace(deltaZeta/2, 2*np.pi/self.nfp-deltaZeta/2, numsZeta)
+            zetaGrid, thetaGrid = np.meshgrid(thetaArr, zetaArr)
+            residualGrid = residualField.getValue(thetaGrid, zetaGrid)
+            residual = np.power(deltaTheta*deltaZeta*np.sum(np.power(residualGrid, 2)), 0.5)
+            return 4*self.nfp*residual/np.pi/np.pi
         from scipy.optimize import minimize
         if kwargs.get('method') == 'CG':
             if kwargs.get('tol') == None:
                 kwargs.update({'tol': 1e-3})
             self.niter = 0
             print("{:>8} {:>16} {:>18}".format('niter', 'iota', 'residual_Boozer'))
-            print("{:>8d} {:>16f} {:>18e}".format(0, self.iota, np.linalg.norm(np.hstack((initResidual.reArr, initResidual.imArr)))))
+            print("{:>8d} {:>16f} {:>18e}".format(0, self.iota, cost(self.initDOFs)))
             def callback(xi):
                 self.niter += 1
                 if self.niter%nstep == 0:
@@ -53,7 +60,7 @@ class IsolatedSurface(SurfProblem):
                 kwargs.update({'tol': 1e-3})
             self.niter = 0
             print("{:>8} {:>16} {:>18}".format('niter', 'iota', 'residual_Boozer'))
-            print("{:>8d} {:>16f} {:>18e}".format(0, self.iota, np.linalg.norm(np.hstack((initResidual.reArr, initResidual.imArr)))))
+            print("{:>8d} {:>16f} {:>18e}".format(0, self.iota, cost(self.initDOFs)))
             def callback(xi):
                 self.niter += 1
                 if self.niter%nstep == 0:
