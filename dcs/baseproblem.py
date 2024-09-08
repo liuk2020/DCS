@@ -28,7 +28,7 @@ class SurfProblem(Surface_BoozerAngle):
             self._mpol, self._ntor = mpol, ntor
             r = ToroidalField.constantField(1, nfp=nfp, mpol=mpol, ntor=ntor) 
             z = ToroidalField.constantField(0, nfp=nfp, mpol=mpol, ntor=ntor)
-            omega = ToroidalField.constantField(0, nfp=nfp, mpol=2*mpol, ntor=2*ntor)
+            omega = ToroidalField.constantField(0, nfp=nfp, mpol=mpol, ntor=ntor)
             super().__init__(r, z, omega, reverseToroidalAngle, reverseOmegaAngle)
             self.changeStellSym(True)
             if iota is None:
@@ -39,7 +39,7 @@ class SurfProblem(Surface_BoozerAngle):
             if mpol is None or ntor is None:
                 mpol, ntor = r.mpol, r.ntor
             self._mpol, self._ntor = mpol, ntor
-            super().__init__(changeResolution(r,mpol,ntor), changeResolution(z,mpol,ntor), changeResolution(omega,2*mpol,2*ntor), reverseToroidalAngle, reverseOmegaAngle)
+            super().__init__(changeResolution(r,mpol,ntor), changeResolution(z,mpol,ntor), changeResolution(omega,mpol,ntor), reverseToroidalAngle, reverseOmegaAngle)
             if iota is None:
                 self._init_iota()
             else:
@@ -56,11 +56,11 @@ class SurfProblem(Surface_BoozerAngle):
         self.doflabels = {}
         self.doflabels['rc'] = [False for i in range(self.mpol*(2*self.ntor+1)+self.ntor)]
         self.doflabels['zs'] = [False for i in range(self.mpol*(2*self.ntor+1)+self.ntor)]
-        self.doflabels['omegas'] = [False for i in range(2*self.mpol*(4*self.ntor+1)+2*self.ntor)]
+        self.doflabels['omegas'] = [False for i in range(self.mpol*(2*self.ntor+1)+2*self.ntor)]
         if not self.stellSym:
             self.doflabels['rs'] = [False for i in range(self.mpol*(2*self.ntor+1)+self.ntor)]
             self.doflabels['zc'] = [False for i in range(self.mpol*(2*self.ntor+1)+self.ntor)]
-            self.doflabels['omegac'] = [False for i in range(2*self.mpol*(4*self.ntor+1)+2*self.ntor)]
+            self.doflabels['omegac'] = [False for i in range(self.mpol*(2*self.ntor+1)+2*self.ntor)]
 
     def _init_paras(self):
         self._powerIndex = 0.97
@@ -83,7 +83,7 @@ class SurfProblem(Surface_BoozerAngle):
         self._mpol, self._ntor = mpol, ntor
         self.r = changeResolution(self.r, mpol, ntor)
         self.z = changeResolution(self.z, mpol, ntor)
-        self.omega = changeResolution(self.omega, 2*mpol, 2*ntor)
+        self.omega = changeResolution(self.omega, mpol, ntor)
         self._init_dofs()
 
     def changeNfp(self, nfp: int):
