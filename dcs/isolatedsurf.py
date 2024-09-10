@@ -4,6 +4,7 @@
 
 import numpy as np
 from tfpy.toroidalField import ToroidalField
+from tfpy.toroidalField import changeResolution
 from .baseproblem import SurfProblem
 
 
@@ -16,13 +17,13 @@ class IsolatedSurface(SurfProblem):
         guu, guv, _ = self.metric
         if not self.fixIota:
             self.updateIota(-guv.getRe(0,0)/guu.getRe(0,0))
-        return guv + self.iota*guu
+        return guv+self.iota*guu
 
     def solve(self, nstep: int=5, **kwargs):
         print('============================================================================================')
         print(f'########### The number of DOFs is {self.numsDOF} ')
         if kwargs.get('method') == None:
-            kwargs.update({'method': 'CG'})
+            kwargs.update({'method': 'BFGS'})
         print('########### The method in the minimization process is ' + kwargs.get('method'))
         initResidual = self.BoozerResidual()
         print(f'########### The nfp is {self.nfp} ')
@@ -31,16 +32,9 @@ class IsolatedSurface(SurfProblem):
         def cost(dofs):
             self.unpackDOF(dofs)
             residualField = self.BoozerResidual()
-            numsTheta, numsZeta = 64, 64
-            deltaTheta, deltaZeta = 2*np.pi/numsTheta, 2*np.pi/self.nfp/numsZeta
-            thetaArr = np.linspace(deltaTheta/2, 2*np.pi-deltaTheta/2, numsTheta)
-            zetaArr = np.linspace(deltaZeta/2, 2*np.pi/self.nfp-deltaZeta/2, numsZeta)
-            zetaGrid, thetaGrid = np.meshgrid(thetaArr, zetaArr)
-            residualGrid = residualField.getValue(thetaGrid, zetaGrid)
-            residual = np.power(deltaTheta*deltaZeta*np.sum(np.power(residualGrid, 2)), 0.5)
-            return 4*self.nfp*residual/np.pi/np.pi
+            return np.linalg.norm(np.hstack((residualField.reArr, residualField.imArr)))
         from scipy.optimize import minimize
-        if kwargs.get('method') == 'CG':
+        if kwargs.get('method')=='CG' or kwargs.get('method')=='BFGS':
             if kwargs.get('tol') == None:
                 kwargs.update({'tol': 1e-3})
             self.niter = 0
@@ -53,7 +47,8 @@ class IsolatedSurface(SurfProblem):
             res = minimize(cost, self.initDOFs, callback=callback, **kwargs)
             if self.niter%nstep != 0:
                 print("{:>8d} {:>16f} {:>18e}".format(self.niter, self.iota, cost(self.initDOFs)))
-        elif kwargs.get('method') == 'trust-constr':
+        elif 'trust' in kwargs.get('method'):
+            kwargs.update({'method': 'trust-constr'})
             res = minimize(cost, self.initDOFs, options={'verbose':3}, **kwargs)
         else:
             if kwargs.get('tol') == None:
