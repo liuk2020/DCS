@@ -100,7 +100,7 @@ class SurfProblem(Surface_BoozerAngle):
         if not self.stellSym:
             for key in ['rs', 'zc', 'omegac']:
                 nums += np.sum(self.doflabels[key])
-        return nums
+        return nums + (not self.fixIota)
 
     def fixAll(self):
         for key in ['rc', 'zs', 'omegas']:
@@ -220,6 +220,8 @@ class SurfProblem(Surface_BoozerAngle):
                             m, n = self.omega.indexReverseMap(i+1)
                             dofs[dofindex] = self.omega.getRe(m,n) / pow(self._powerIndex,abs(m)+abs(n))
                         dofindex += 1
+        if not self.fixIota:
+            dofs[-1] = self.iota
         return dofs
 
     def unpackDOF(self, dofs: np.ndarray) -> None:
@@ -252,6 +254,8 @@ class SurfProblem(Surface_BoozerAngle):
                             m, n = self.omega.indexReverseMap(i+1)
                             self.omega.setRe(m,n,dofs[dofindex]*pow(self._powerIndex,abs(m)+abs(n)))
                         dofindex += 1
+        if not self.fixIota:
+            self.updateIota(dofs[-1])
         return
 
 

@@ -15,8 +15,6 @@ class IsolatedSurface(SurfProblem):
 
     def BoozerResidual(self) -> ToroidalField:
         guu, guv, _ = self.metric
-        if not self.fixIota:
-            self.updateIota(-guv.getRe(0,0)/guu.getRe(0,0))
         return guv+self.iota*guu
 
     def solve(self, nstep: int=5, **kwargs):
@@ -25,7 +23,11 @@ class IsolatedSurface(SurfProblem):
         if kwargs.get('method') == None:
             kwargs.update({'method': 'BFGS'})
         print('########### The method in the minimization process is ' + kwargs.get('method'))
-        initResidual = self.BoozerResidual()
+        # initResidual = self.BoozerResidual()
+        init_guu, init_guv, _ = self.metric
+        if not self.fixIota:
+            self.updateIota(-init_guv.getRe(0,0)/init_guu.getRe(0,0))
+        initResidual = init_guv+self.iota*init_guu
         print(f'########### The nfp is {self.nfp} ')
         print(f'########### The resolution of the R and Z:  mpol={self.mpol}, ntor={self.ntor} ')
         print(f'########### The resolution of the residual:  mpol={initResidual.mpol}, ntor={initResidual.ntor}, total={len(initResidual.reArr)} ')
