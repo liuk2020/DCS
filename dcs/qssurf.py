@@ -15,12 +15,12 @@ class QSSurface(IsolatedSurface):
     def __init__(self, r: ToroidalField = None, z: ToroidalField = None, omega: ToroidalField = None, mpol: int = None, ntor: int = None, nfp: int = None, iota: float = None, fixIota: bool = False, reverseToroidalAngle: bool = False, reverseOmegaAngle: bool = True) -> None:
         super().__init__(r, z, omega, mpol, ntor, nfp, iota, fixIota, reverseToroidalAngle, reverseOmegaAngle)
 
-    def setSymmetry(self, m: int=0, n: int=1):
+    def setSymmetry(self, m: int=1, n: int=0):
         self.sym_m = m
         self.sym_n = n
 
     def _init_paras(self):
-        self.mu = 100
+        self.mu = 61.8
         super()._init_paras()
 
     @property
@@ -72,15 +72,18 @@ class QSSurface(IsolatedSurface):
         initBoozerResidual = init_guv+self.iota*init_guu
         initScriptB = init_gvv+self.iota*init_guv
         if self.sym_m == 0:
-            initQSResidual = derivateTor(initScriptB)
-        elif self.sym_n == 0:
             initQSResidual = derivatePol(initScriptB)
+        elif self.sym_n == 0:
+            initQSResidual = derivateTor(initScriptB)
         else:
-            initQSResidual =  self.sym_m*derivatePol(initScriptB) + self.sym_n*derivateTor(initScriptB)
+            initQSResidual =  self.sym_n*self.nfp*derivatePol(initScriptB) + self.sym_m*derivateTor(initScriptB)
         print(f'########### The nfp is {self.nfp} ')
         print(f'########### The resolution of the R and Z:  mpol={self.mpol}, ntor={self.ntor} ')
         print(f'########### The resolution of the residual:  mpol={initBoozerResidual.mpol}, ntor={initBoozerResidual.ntor}, total={len(initBoozerResidual.reArr)} ')
-        print(f'########### The quasi-symmetric type is: B=B({self.sym_m}*theta,N={self.sym_n}*zeta) ')
+        if self.sym_n > 0:
+            print(f'########### The quasi-symmetric type is: B=B(s,{self.sym_m}*theta-{self.sym_n}*{self.nfp}*zeta) ')
+        else:
+            print(f'########### The quasi-symmetric type is: B=B(s,{self.sym_m}*theta+{-self.sym_n}*{self.nfp}*zeta) ')
         
         def residual(dofs) -> Tuple[ToroidalField, ToroidalField]:
             self.unpackDOF(dofs)
@@ -88,11 +91,11 @@ class QSSurface(IsolatedSurface):
             BoozerResidual =  guv + self.iota*guu
             scriptB = gvv + self.iota*guv
             if self.sym_m == 0:
-                QSResidual = derivateTor(scriptB)
-            elif self.sym_n == 0:
                 QSResidual = derivatePol(scriptB)
+            elif self.sym_n == 0:
+                QSResidual = derivateTor(scriptB)
             else:
-                QSResidual = self.sym_m*derivatePol(scriptB) + self.sym_n*derivateTor(scriptB)
+                QSResidual = self.sym_n*self.nfp*derivatePol(scriptB) + self.sym_m*derivateTor(scriptB)
             return BoozerResidual, QSResidual
         def cost(dofs):
             BoozerResidual, QSResidual = residual(dofs)
