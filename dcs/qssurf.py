@@ -126,7 +126,7 @@ class QSSurface(IsolatedSurface):
                 _BoozerResidual, _QSResidual = residual(self.initDOFs)
                 _BoozerResidualValue = np.linalg.norm(np.hstack((_BoozerResidual.reArr, _BoozerResidual.imArr)))
                 _QSResidualValue = np.linalg.norm(np.hstack((_QSResidual.reArr, _QSResidual.imArr)))
-                print("{:>8d} {:>16f} {:>18e} {:>12f} {:>18e} {:>18e}".format(self.niter, self.iota, _BoozerResidualValue, self.mu, _QSResidualValue, _BoozerResidualValue+self.mu*_QSResidualValue))
+                print("{:>8d} {:>16f} {:>18e} {:>12f} {:>18e} {:>18e}".format(self.niter, self.iota, _BoozerResidualValue, self.mu, _QSResidualValue, _BoozerResidualValue*self.mu+_QSResidualValue))
         
         elif 'trust' in kwargs.get('method'):
             kwargs.update({'method': 'trust-constr'})
