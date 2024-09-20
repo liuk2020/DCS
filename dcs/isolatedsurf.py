@@ -15,9 +15,10 @@ class IsolatedSurface(SurfProblem):
 
     def BoozerResidual(self) -> ToroidalField:
         guu, guv, _ = self.metric
-        return guv+self.iota*guu
+        return guv + self.iota*guu
 
     def solve(self, nstep: int=5, **kwargs):
+
         print('============================================================================================')
         print(f'########### The number of DOFs is {self.numsDOF} ')
         if kwargs.get('method') == None:
@@ -31,11 +32,14 @@ class IsolatedSurface(SurfProblem):
         print(f'########### The nfp is {self.nfp} ')
         print(f'########### The resolution of the R and Z:  mpol={self.mpol}, ntor={self.ntor} ')
         print(f'########### The resolution of the residual:  mpol={initResidual.mpol}, ntor={initResidual.ntor}, total={len(initResidual.reArr)} ')
+        
         def cost(dofs):
             self.unpackDOF(dofs)
             residualField = self.BoozerResidual()
             return np.linalg.norm(np.hstack((residualField.reArr, residualField.imArr)))
+        
         from scipy.optimize import minimize
+        
         if kwargs.get('method')=='CG' or kwargs.get('method')=='BFGS':
             if kwargs.get('tol') == None:
                 kwargs.update({'tol': 1e-3})
@@ -49,9 +53,11 @@ class IsolatedSurface(SurfProblem):
             res = minimize(cost, self.initDOFs, callback=callback, **kwargs)
             if self.niter%nstep != 0:
                 print("{:>8d} {:>16f} {:>18e}".format(self.niter, self.iota, cost(self.initDOFs)))
+        
         elif 'trust' in kwargs.get('method'):
             kwargs.update({'method': 'trust-constr'})
             res = minimize(cost, self.initDOFs, options={'verbose':3}, **kwargs)
+        
         else:
             if kwargs.get('tol') == None:
                 kwargs.update({'tol': 1e-3})
@@ -65,6 +71,7 @@ class IsolatedSurface(SurfProblem):
             res = minimize(cost, self.initDOFs, callback=callback, **kwargs)
             if self.niter%nstep != 0:
                 print("{:>8d} {:>16f} {:>18e}".format(self.niter, self.iota, cost(self.initDOFs)))
+        
         if not res.success:
             print('Warning: ' + res.message)
 
