@@ -23,28 +23,6 @@ class QSSurface(IsolatedSurface):
         self.mu = 61.8
         super()._init_paras()
 
-    @property
-    def numsDOF(self):
-        return super().numsDOF + 1
-
-    @property
-    def initDOFs(self):
-        dofs = super().initDOFs
-        if not self.fixIota:
-            dofs[-2] = self.iota
-            dofs[-1] = self.mu
-        else:
-            dofs[-1] = self.mu
-        return dofs
-
-    def unpackDOF(self, dofs: np.ndarray) -> None:
-        super().unpackDOF(dofs)
-        if not self.fixIota:
-            self.updateIota(dofs[-2])
-            self.mu = dofs[-1]
-        else:
-            self.mu = dofs[-1]
-
     def QSResidual(self) -> ToroidalField:
         _, guv, gvv = self.metric
         scriptB = gvv + self.iota*guv
