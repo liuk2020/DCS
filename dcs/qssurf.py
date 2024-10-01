@@ -33,7 +33,6 @@ class QSSurface(IsolatedSurface):
         else:
             return self.sym_m*derivatePol(scriptB) + self.sym_n*derivateTor(scriptB)
 
-    # TODO: reconstruction of this method
     def solve(self, nstep: int = 5, **kwargs):
         
         print('============================================================================================')
