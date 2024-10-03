@@ -75,9 +75,9 @@ class QSSurface(IsolatedSurface):
         print(f'########### The resolution of the R and Z:  mpol={self.mpol}, ntor={self.ntor} ')
         print(f'########### The resolution of the residual:  mpol={initBoozerResidual.mpol}, ntor={initBoozerResidual.ntor}, total={len(initBoozerResidual.reArr)} ')
         if self.sym_n > 0:
-            print(f'########### The quasi-symmetric type is: B=B(s,{self.sym_m}*theta-{self.sym_n}*{self.nfp}*zeta) ')
+            print(f'########### The quasi-symmetric type is: B=B(s,{int(self.sym_m)}*theta-{int(self.sym_n)}*{self.nfp}*zeta) ')
         else:
-            print(f'########### The quasi-symmetric type is: B=B(s,{self.sym_m}*theta+{-self.sym_n}*{self.nfp}*zeta) ')
+            print(f'########### The quasi-symmetric type is: B=B(s,{int(self.sym_m)}*theta+{int(-self.sym_n)}*{self.nfp}*zeta) ')
         
         def residual(dofs) -> Tuple[ToroidalField, ToroidalField]:
             self.unpackDOF(dofs)
