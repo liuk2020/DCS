@@ -23,33 +23,6 @@ class QSSurface(IsolatedSurface):
         self.mu = 61.8
         super()._init_paras()
 
-    def QSResidual(self) -> ToroidalField:
-        try:
-            _, guv, gvv = self.metric
-            scriptB = gvv + self.iota*guv
-            if self.sym_m == 0:
-                return derivateTor(scriptB)
-            elif self.sym_n == 0:
-                return derivatePol(scriptB)
-            else:
-                return self.sym_m*derivatePol(scriptB) + self.sym_n*derivateTor(scriptB)
-        except AttributeError as argument:
-            print(argument)
-            print('Set sym_m=1, sym_n=0. ')
-            self.setSymmetry()
-            _, guv, gvv = self.metric
-            scriptB = gvv + self.iota*guv
-            if self.sym_m == 0:
-                return derivateTor(scriptB)
-            elif self.sym_n == 0:
-                return derivatePol(scriptB)
-            else:
-                return self.sym_m*derivatePol(scriptB) + self.sym_n*derivateTor(scriptB)
-        else:
-            print('There is an error... ')
-        return
-
-
     def solve(self, nstep: int = 5, **kwargs):
         
         print('============================================================================================')
