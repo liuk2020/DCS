@@ -20,13 +20,30 @@ class QSSurface(IsolatedSurface):
         self.sym_n = n
 
     def _init_paras(self):
-        self.mu = 61.8
+        self.mu_qs = 5e-3
+        self.mu_omega = 5e-5
         super()._init_paras()
+        
+    def QSResidual(self, guu, guv, gvv) -> ToroidalField:
+        scriptB =  gvv + self.iota*guv
+        if self.sym_m == 0:
+            residual = derivatePol(scriptB)
+        elif self.sym_n == 0:
+            residual = derivateTor(scriptB)
+        else:
+            residual =  self.sym_n*self.nfp*derivatePol(scriptB) + self.sym_m*derivateTor(scriptB)
+        return residual
+    def updateResidual(self, dofs):
+        self.unpackDOF(dofs)
+        guu, guv, gvv = self.metric
+        self.Boozer_residual =  self.BoozerResidual(guu, guv, gvv)
+        self.QS_residual = self.QSResidual(guu, guv, gvv)
+        return
 
     def solve(self, nstep: int = 5, **kwargs):
         
-        print('============================================================================================')
-        print(f'########### The number of DOFs is {self.numsDOF} ')
+        print('==============================================================================================================================')
+        print(f'########### The total number of DOFs is {self.numsDOF} ')
         if kwargs.get('method') == None:
             kwargs.update({'method': 'BFGS'})
         print('########### The method in the minimization process is ' + kwargs.get('method'))
@@ -36,73 +53,87 @@ class QSSurface(IsolatedSurface):
             self.updateIota(-init_guv.getRe(0,0)/init_guu.getRe(0,0))
         if (not hasattr(self, 'sym_m')) or (not hasattr(self, 'sym_n')):
             self.setSymmetry()
-        initBoozerResidual = init_guv+self.iota*init_guu
-        initScriptB = init_gvv+self.iota*init_guv
-        if self.sym_m == 0:
-            initQSResidual = derivatePol(initScriptB)
-        elif self.sym_n == 0:
-            initQSResidual = derivateTor(initScriptB)
-        else:
-            initQSResidual =  self.sym_n*self.nfp*derivatePol(initScriptB) + self.sym_m*derivateTor(initScriptB)
+        self.updateResidual(self.initDOFs)
         print(f'########### The nfp is {self.nfp} ')
-        print(f'########### The resolution of the R and Z:  mpol={self.mpol}, ntor={self.ntor} ')
-        print(f'########### The resolution of the residual:  mpol={initBoozerResidual.mpol}, ntor={initBoozerResidual.ntor}, total={len(initBoozerResidual.reArr)} ')
+        print(f'########### The total resolution of the R and Z:  mpol={self.mpol}, ntor={self.ntor} ')
+        print(f'########### The total resolution of the residual:  mpol={self.Boozer_residual.mpol}, ntor={self.Boozer_residual.ntor}, total={len(self.Boozer_residual.reArr)} ')
         if self.sym_n > 0:
             print(f'########### The quasi-symmetric type is: B=B(s,{int(self.sym_m)}*theta-{int(self.sym_n)}*{self.nfp}*zeta) ')
         else:
             print(f'########### The quasi-symmetric type is: B=B(s,{int(self.sym_m)}*theta+{int(-self.sym_n)}*{self.nfp}*zeta) ')
         
-        def residual(dofs) -> Tuple[ToroidalField, ToroidalField]:
-            self.unpackDOF(dofs)
-            guu, guv, gvv = self.metric
-            BoozerResidual =  guv + self.iota*guu
-            scriptB = gvv + self.iota*guv
-            if self.sym_m == 0:
-                QSResidual = derivatePol(scriptB)
-            elif self.sym_n == 0:
-                QSResidual = derivateTor(scriptB)
-            else:
-                QSResidual = self.sym_n*self.nfp*derivatePol(scriptB) + self.sym_m*derivateTor(scriptB)
-            return BoozerResidual, QSResidual
         def cost(dofs):
-            BoozerResidual, QSResidual = residual(dofs)
+            self.updateResidual(dofs)
+            aveOmega = self.omega.integrate()
             return (
-                np.linalg.norm(np.hstack((BoozerResidual.reArr, BoozerResidual.imArr)))*self.mu
-                + np.linalg.norm(np.hstack((QSResidual.reArr, QSResidual.imArr)))
+                np.linalg.norm(np.hstack((self.Boozer_residual.reArr, self.Boozer_residual.imArr)))
+                + self.mu_qs * np.linalg.norm(np.hstack((self.QS_residual.reArr, self.QS_residual.imArr)))
+                + self.mu_omega * aveOmega
             )
         
         from scipy.optimize import minimize
         
-        if kwargs.get('method')=='CG' or kwargs.get('method')=='BFGS':
-            if kwargs.get('tol') == None:
-                kwargs.update({'tol': 1e-3})
-            self.niter = 0
-            print("{:>8} {:>16} {:>18} {:>12} {:>18} {:>18}".format('niter', 'iota', 'residual_Boozer', 'mu', 'residual_QS', 'cost function'))
-            _initBoozerResidualValue = np.linalg.norm(np.hstack((initBoozerResidual.reArr, initBoozerResidual.imArr)))
-            _initQSResidualValue = np.linalg.norm(np.hstack((initQSResidual.reArr, initQSResidual.imArr)))
-            print("{:>8d} {:>16f} {:>18e} {:>12f} {:>18e} {:>18e}".format(0, self.iota, _initBoozerResidualValue, self.mu, _initQSResidualValue, _initBoozerResidualValue*self.mu+_initQSResidualValue))
-            def callback(xi):
-                self.niter += 1
-                if self.niter%nstep == 0:
-                    _BoozerResidual, _QSResidual = residual(xi)
-                    _BoozerResidualValue = np.linalg.norm(np.hstack((_BoozerResidual.reArr, _BoozerResidual.imArr)))
-                    _QSResidualValue = np.linalg.norm(np.hstack((_QSResidual.reArr, _QSResidual.imArr)))
-                    print("{:>8d} {:>16f} {:>18e} {:>12f} {:>18e} {:>18e}".format(self.niter, self.iota, _BoozerResidualValue, self.mu, _QSResidualValue, _BoozerResidualValue*self.mu+_QSResidualValue))
-            res = minimize(cost, self.initDOFs, callback=callback, **kwargs)
-            if self.niter%nstep != 0:
-                _BoozerResidual, _QSResidual = residual(self.initDOFs)
-                _BoozerResidualValue = np.linalg.norm(np.hstack((_BoozerResidual.reArr, _BoozerResidual.imArr)))
-                _QSResidualValue = np.linalg.norm(np.hstack((_QSResidual.reArr, _QSResidual.imArr)))
-                print("{:>8d} {:>16f} {:>18e} {:>12f} {:>18e} {:>18e}".format(self.niter, self.iota, _BoozerResidualValue, self.mu, _QSResidualValue, _BoozerResidualValue*self.mu+_QSResidualValue))
+        for index in np.arange(1, max(self.mpol,self.ntor)+1, dtype='int'):
+            
+            self.freeAll()
+            self.fixDOF('rc', 1, 0)
+            self.fixDOF('zs', 1, 0)
+            if index <= self.mpol and index <= self.ntor:
+                self.fixTruncation_rc(index, index)
+                self.fixTruncation_zs(index, index)
+                self.fixTruncation_omegas(2*index, 2*index)
+                print('==============================================================================================================================')
+                print(f'########### The temporary resolution of the R and Z:  mpol={index}, ntor={index} ')
+                print(f'########### The temporary number of DOFs is {self.numsDOF} ')
+            elif index <= self.mpol and index > self.ntor:
+                self.fixTruncation_rc(index, self.ntor)
+                self.fixTruncation_zs(index, self.ntor)
+                self.fixTruncation_omegas(2*index, 2*self.ntor)
+                print('==============================================================================================================================')
+                print(f'########### The temporary resolution of the R and Z:  mpol={index}, ntor={self.ntor} ')
+                print(f'########### The temporary number of DOFs is {self.numsDOF} ')
+            elif index > self.mpol and index <= self.ntor:
+                self.fixTruncation_rc(self.mpol, index)
+                self.fixTruncation_zs(self.mpol, index)
+                self.fixTruncation_omegas(2*self.mpol, 2*index)
+                print('==============================================================================================================================')
+                print(f'########### The temporary resolution of the R and Z:  mpol={self.mpol}, ntor={index} ')
+                print(f'########### The temporary number of DOFs is {self.numsDOF} ')
+            else:
+                break
+                
+            if kwargs.get('method')=='CG' or kwargs.get('method')=='BFGS':
+                if kwargs.get('tol') == None:
+                    kwargs.update({'tol': 1e-3})
+                self.niter = 0
+                print("{:>8} {:>16} {:>18} {:>12} {:>18} {:>12} {:>18} {:>18}".format('niter', 'iota', 'residual_Boozer', 'mu_QS', 'residual_QS', 'mu_omega', 'ave_omega', 'cost function'))
+                _initBoozerResidualValue = np.linalg.norm(np.hstack((self.Boozer_residual.reArr, self.Boozer_residual.imArr)))
+                _initQSResidualValue = np.linalg.norm(np.hstack((self.QS_residual.reArr, self.QS_residual.imArr)))
+                _initaveomega = self.omega.integrate()
+                print("{:>8d} {:>16f} {:>18e} {:>12f} {:>18e} {:>12f} {:>18e} {:>18e}".format(0, self.iota, _initBoozerResidualValue, self.mu_qs, _initQSResidualValue, self.mu_omega, _initaveomega, _initBoozerResidualValue+self.mu_qs*_initQSResidualValue+self.mu_omega*_initaveomega))
+                def callback(xi):
+                    self.niter += 1
+                    if self.niter%nstep == 0:
+                        _initBoozerResidualValue = np.linalg.norm(np.hstack((self.Boozer_residual.reArr, self.Boozer_residual.imArr)))
+                        _initQSResidualValue = np.linalg.norm(np.hstack((self.QS_residual.reArr, self.QS_residual.imArr)))
+                        _initaveomega = self.omega.integrate()
+                        print("{:>8d} {:>16f} {:>18e} {:>12f} {:>18e} {:>12f} {:>18e} {:>18e}".format(self.niter, self.iota, _initBoozerResidualValue, self.mu_qs, _initQSResidualValue, self.mu_omega, _initaveomega, _initBoozerResidualValue+self.mu_qs*_initQSResidualValue+self.mu_omega*_initaveomega))
+                res = minimize(cost, self.initDOFs, callback=callback, **kwargs)
+                if self.niter%nstep != 0:
+                    _initBoozerResidualValue = np.linalg.norm(np.hstack((self.Boozer_residual.reArr, self.Boozer_residual.imArr)))
+                    _initQSResidualValue = np.linalg.norm(np.hstack((self.QS_residual.reArr, self.QS_residual.imArr)))
+                    _initaveomega = self.omega.integrate()
+                    print("{:>8d} {:>16f} {:>18e} {:>12f} {:>18e} {:>12f} {:>18e} {:>18e}".format(self.niter, self.iota, _initBoozerResidualValue, self.mu_qs, _initQSResidualValue, self.mu_omega, _initaveomega, _initBoozerResidualValue+self.mu_qs*_initQSResidualValue+self.mu_omega*_initaveomega))
+            
+            elif 'trust' in kwargs.get('method'):
+                kwargs.update({'method': 'trust-constr'})
+                res = minimize(cost, self.initDOFs, options={'verbose':3}, **kwargs)
+            else:
+                pass
         
-        elif 'trust' in kwargs.get('method'):
-            kwargs.update({'method': 'trust-constr'})
-            res = minimize(cost, self.initDOFs, options={'verbose':3}, **kwargs)
-        else:
-            pass
-        
-        if not res.success:
-            print('Warning: ' + res.message)
+            if not res.success:
+                print('Warning: ' + res.message)
+
 
 
 if __name__ == '__main__':

@@ -13,8 +13,7 @@ class IsolatedSurface(SurfProblem):
     def __init__(self, r: ToroidalField = None, z: ToroidalField = None, omega: ToroidalField = None, mpol: int = None, ntor: int = None, nfp: int = None, iota: float = None, fixIota: bool = False, reverseToroidalAngle: bool = False, reverseOmegaAngle: bool = True) -> None:
         super().__init__(r, z, omega, mpol, ntor, nfp, iota, fixIota, reverseToroidalAngle, reverseOmegaAngle)
 
-    def BoozerResidual(self) -> ToroidalField:
-        guu, guv, _ = self.metric
+    def BoozerResidual(self, guu, guv, gvv) -> ToroidalField:
         return guv + self.iota*guu
 
     def solve(self, nstep: int=5, **kwargs):
@@ -35,7 +34,8 @@ class IsolatedSurface(SurfProblem):
         
         def cost(dofs):
             self.unpackDOF(dofs)
-            residualField = self.BoozerResidual()
+            guu, guv, gvv = self.metric
+            residualField = self.BoozerResidual(guu, guv, gvv)
             return np.linalg.norm(np.hstack((residualField.reArr, residualField.imArr)))
         
         from scipy.optimize import minimize
