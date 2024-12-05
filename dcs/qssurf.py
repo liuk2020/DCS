@@ -33,6 +33,7 @@ class QSSurface(IsolatedSurface):
         else:
             residual =  self.sym_n*self.nfp*derivatePol(scriptB) + self.sym_m*derivateTor(scriptB)
         return residual
+    
     def updateResidual(self, dofs):
         self.unpackDOF(dofs)
         guu, guv, gvv = self.metric
