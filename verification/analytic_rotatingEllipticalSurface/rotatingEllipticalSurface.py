@@ -12,7 +12,7 @@ def rotatingEllip(nfp: int, a: float, Delta:float):
         nfp=nfp
     )
     surfProblem.changeStellSym(True)
-    surfProblem.updateMajorRadius(1)
+    surfProblem.r.setRe(0, 0, 1)
     surfProblem.r.setRe(1, 0, a)
     surfProblem.z.setIm(1, 0, -a)
     surfProblem.r.setRe(1, 1, a*Delta)

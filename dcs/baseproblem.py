@@ -68,37 +68,45 @@ class SurfProblem(Surface_BoozerAngle):
             self.paras[key] = value
             
     def _init_constraint(self):
-        self.constraint = {
-            'iota': False
+        self._constraint = {
+            'iota': False,
+            # 'inverse ratio': False
         }
         
     def updateconstraint(self, key: str, value: bool):
-        if key not in self.constraint.keys():
+        if key not in self._constraint.keys():
             print(f'Warning: there is no constraint named {key}')
         else:
-            self.constraint[key] = value
+            self._constraint[key] = value
             
     def _init_weight(self):
-        self.weight = {
-            'iota': 0.1
+        self._weight = {
+            'iota': 0.1,
+            # 'inverse ratio': 0.01
         }
         
     def updateweight(self, key: str, value: float):
-        if key not in self.weight.keys():
+        if key not in self._weight.keys():
             print(f'Warning: there is no constraint named {key}')
         else:
-            self.weight[key] = value
+            self._weight[key] = value
             
     def _init_target(self):
-        self.target = {
-            'iota': 0.309
+        self._target = {
+            'iota': 0.309,
+            # 'inverse ratio': 0.1
         }
         
     def updatetarget(self, key: str, value):
-        if key not in self.target.keys():
+        if key not in self._target.keys():
             print(f'Warning: there is no constraint named {key}')
         else:
-            self.target[key] = value
+            self._target[key] = value
+            
+    def addconstraint(self, key: str, default_weight: float, default_target: float):
+        self._constraint[key] = False
+        self._weight[key] = default_weight
+        self._target[key] = default_target
     
     @property
     def iota(self):
@@ -111,8 +119,12 @@ class SurfProblem(Surface_BoozerAngle):
     def updateIota(self, iota):
         self._iota = iota
 
-    def updateMajorRadius(self, majorRadius: float):
-        self.r.setRe(0, 0, majorRadius)
+    def updateInverseRatio(self):
+        _area, _volume = self.getAreaVolume(npol=128, ntor=128)
+        self.area, self.volume = _area, _volume
+        self.majorR = self.area*self.area/8/np.pi/np.pi/self.volume
+        self.minorR = 2*self.volume/self.area
+        self.inverseRatio = self.minorR / self.majorR
 
     def changeResolution(self, mpol: int, ntor: int):
         self._mpol, self._ntor = mpol, ntor

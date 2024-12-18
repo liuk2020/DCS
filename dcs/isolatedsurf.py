@@ -14,24 +14,47 @@ class IsolatedSurface(SurfProblem):
         super().__init__(r, z, omega, mpol, ntor, nfp, reverseToroidalAngle, reverseOmegaAngle)
 
     def BoozerResidual(self, guu, guv, gvv) -> ToroidalField:
-        return guv + self.iota*guu
-    
+        return guv + self.iota*guu    
+
     def iotaResidual(self) -> float:
-        return self.weight['iota']*(self.iota/self.target['iota']-1)**2
+        return self._weight['iota']*(self.iota/self._target['iota']-1)**2
+    
+    # def ratioResidual(self) -> float:
+    #     return self._weight['inverse ratio']*(self._target['inverse ratio']-self.inverseRatio)**2
     
     def updateResidual(self):
-        guu, guv, gvv = self.metric
-        self.Boozer_residual =  self.BoozerResidual(guu, guv, gvv)
-        if self.constraint['iota']:
+        self.guu, self.guv, self.gvv = self.metric
+        self.Boozer_residual =  self.BoozerResidual(self.guu, self.guv, self.gvv)
+        if self._constraint['iota']:
             self.iota_residual = self.iotaResidual()
+        # if self._constraint['inverse ratio']:
+        #     self.updateInverseRatio()
+        #     self.ratio_residual = self.ratioResidual()
             
     def costfunction(self, dofs):
         self.unpackDOF(dofs)
         self.updateResidual()
         cost = np.linalg.norm(np.hstack((self.Boozer_residual.reArr, self.Boozer_residual.imArr)))
-        if self.constraint['iota']:
+        if self._constraint['iota']:
             cost += self.iota_residual
+        # if self._constraint['inverse ratio']:
+        #     cost += self.ratio_residual
         return cost
+    
+    def info_print(self) -> str:
+        return "{:>8} {:>14} {:>14} {:>14} {:>18} {:>18}".format('niter', 'iota', 'area', 'volume', 'residual_Boozer', 'cost_function')
+
+    def cost_print(self, niter, dofs) -> str:
+        cost = self.costfunction(dofs)
+        self.updateInverseRatio()
+        return "{:>8d} {:>14f} {:>14f} {:>14f} {:>18e} {:>18e}".format(
+            niter,
+            self.iota,
+            self.area,
+            self.volume,
+            np.linalg.norm(np.hstack((self.Boozer_residual.reArr, self.Boozer_residual.imArr))),
+            cost
+        )
 
     def solve(self, nstep: int=5, **kwargs):
 
@@ -48,32 +71,21 @@ class IsolatedSurface(SurfProblem):
         print(f'########### The resolution of the R and Z:  mpol={self.mpol}, ntor={self.ntor} ')
         print(f'########### The resolution of the residual:  mpol={initResidual.mpol}, ntor={initResidual.ntor}, total={len(initResidual.reArr)} ')
         
-        def info_print() -> str:
-            return "{:>8} {:>16} {:>18} {:>18}".format('niter', 'iota', 'residual_Boozer', 'cost_function')
-        def cost_print(niter: int, dofs) -> str:
-            cost = self.costfunction(dofs)
-            return "{:>8d} {:>16f} {:>18e} {:>18e}".format(
-                niter,
-                self.iota,
-                np.linalg.norm(np.hstack((self.Boozer_residual.reArr, self.Boozer_residual.imArr))),
-                cost
-            )
-        
         from scipy.optimize import minimize
         
         if kwargs.get('method')=='CG' or kwargs.get('method')=='BFGS':
             if kwargs.get('tol') == None:
                 kwargs.update({'tol': 1e-3})
             self.niter = 0
-            print(info_print())
-            print(cost_print(0, self.initDOFs))
+            print(self.info_print())
+            print(self.cost_print(0, self.initDOFs))
             def callback(xi):
                 self.niter += 1
                 if self.niter%nstep == 0:
-                    print(cost_print(self.niter, xi))
+                    print(self.cost_print(self.niter, xi))
             res = minimize(self.costfunction, self.initDOFs, callback=callback, **kwargs)
             if self.niter%nstep != 0:
-                print(cost_print(self.niter, self.initDOFs))
+                print(self.cost_print(self.niter, self.initDOFs))
         
         elif 'trust' in kwargs.get('method'):
             kwargs.update({'method': 'trust-constr'})
@@ -83,15 +95,15 @@ class IsolatedSurface(SurfProblem):
             if kwargs.get('tol') == None:
                 kwargs.update({'tol': 1e-3})
             self.niter = 0
-            print(info_print())
-            print(cost_print(0, self.initDOFs))
+            print(self.info_print())
+            print(self.cost_print(0, self.initDOFs))
             def callback(xi):
                 self.niter += 1
                 if self.niter%nstep == 0:
-                    print(cost_print(self.niter, xi))
+                    print(self.cost_print(self.niter, xi))
             res = minimize(self.costfunction, self.initDOFs, callback=callback, **kwargs)
             if self.niter%nstep != 0:
-                print(cost_print(self.niter, self.initDOFs))
+                print(self.cost_print(self.niter, self.initDOFs))
         
         if not res.success:
             print('Warning: ' + res.message)

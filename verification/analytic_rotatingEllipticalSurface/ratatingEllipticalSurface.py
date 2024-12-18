@@ -1,3 +1,0 @@
-from dcs import IsolatedSurface
-
-

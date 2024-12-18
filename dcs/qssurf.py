@@ -12,20 +12,16 @@ from typing import Tuple
 
 class QSSurface(IsolatedSurface):
 
-    def __init__(self, r: ToroidalField = None, z: ToroidalField = None, omega: ToroidalField = None, mpol: int = None, ntor: int = None, nfp: int = None, iota: float = None, fixIota: bool = False, reverseToroidalAngle: bool = False, reverseOmegaAngle: bool = True) -> None:
-        super().__init__(r, z, omega, mpol, ntor, nfp, iota, fixIota, reverseToroidalAngle, reverseOmegaAngle)
+    def __init__(self, r: ToroidalField = None, z: ToroidalField = None, omega: ToroidalField = None, mpol: int = None, ntor: int = None, nfp: int = None, reverseToroidalAngle: bool = False, reverseOmegaAngle: bool = True) -> None:
+        super().__init__(r, z, omega, mpol, ntor, nfp, reverseToroidalAngle, reverseOmegaAngle)
+        self.addconstraint('qs', 0.1, 0)
 
     def setSymmetry(self, m: int=1, n: int=0):
         self.sym_m = m
         self.sym_n = n
-
-    def _init_paras(self):
-        self.mu_qs = 5e-3
-        self.mu_omega = 5e-5
-        super()._init_paras()
         
     def QSResidual(self, guu, guv, gvv) -> ToroidalField:
-        scriptB =  gvv + self.iota*guv
+        scriptB =  self.iota*self.iota*guu + 2*self.iota*guv + gvv
         if self.sym_m == 0:
             residual = derivatePol(scriptB)
         elif self.sym_n == 0:
@@ -34,14 +30,44 @@ class QSSurface(IsolatedSurface):
             residual =  self.sym_n*self.nfp*derivatePol(scriptB) + self.sym_m*derivateTor(scriptB)
         return residual
     
-    def updateResidual(self, dofs):
-        self.unpackDOF(dofs)
-        guu, guv, gvv = self.metric
-        self.Boozer_residual =  self.BoozerResidual(guu, guv, gvv)
-        self.QS_residual = self.QSResidual(guu, guv, gvv)
-        return
-
+    def updateResidual(self):
+        super().updateResidual()
+        self.qs_residual = self.QSResidual(self.guu, self.guv, self.gvv)
+        
+    def costfunction(self, dofs):
+        cost = super().costfunction(dofs)
+        self.updateResidual()
+        cost += self._weight['qs'] * np.linalg.norm(np.hstack((self.qs_residual.reArr, self.qs_residual.imArr)))
+        return cost
+        
+    def info_print(self) -> str:
+        return "{:>8} {:>14} {:>14} {:>14} {:>18} {:>18} {:>18}".format('niter', 'iota', 'area', 'volume','residual_Boozer', 'residual_qs', 'cost_function')
+    
+    def cost_print(self, niter, dofs) -> str:
+        cost = self.costfunction(dofs)
+        self.updateInverseRatio()
+        return "{:>8d} {:>14f} {:>14f} {:>14f} {:>18e} {:>18e} {:>18e}".format(
+            niter,
+            self.iota,
+            self.area,
+            self.volume,
+            np.linalg.norm(np.hstack((self.Boozer_residual.reArr, self.Boozer_residual.imArr))),
+            np.linalg.norm(np.hstack((self.qs_residual.reArr, self.qs_residual.imArr))),
+            cost
+        )
+        
     def solve(self, nstep: int = 5, **kwargs):
+        print('==============================================================================================================================')
+        if (not hasattr(self, 'sym_m')) or (not hasattr(self, 'sym_n')):
+            self.setSymmetry()
+        if self.sym_n > 0:
+            print(f'########### The quasi-symmetric type is: B=B(s,{int(self.sym_m)}*theta-{int(self.sym_n)}*{self.nfp}*zeta) ')
+        else:
+            print(f'########### The quasi-symmetric type is: B=B(s,{int(self.sym_m)}*theta+{int(-self.sym_n)}*{self.nfp}*zeta) ')
+        super().solve(nstep, **kwargs)
+
+    # TODO
+    def solve_condense(self, nstep: int = 5, **kwargs):
         
         print('==============================================================================================================================')
         print(f'########### The total number of DOFs is {self.numsDOF} ')
