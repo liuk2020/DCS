@@ -41,16 +41,19 @@ class QSSurface(IsolatedSurface):
         return cost
         
     def info_print(self) -> str:
-        return "{:>8} {:>14} {:>14} {:>14} {:>18} {:>18} {:>18}".format('niter', 'iota', 'area', 'volume','residual_Boozer', 'residual_qs', 'cost_function')
+        return "{:>8} {:>14} {:>16} {:>16} {:>18} {:>18} {:>18}".format('niter', 'iota', 'min-crossarea', 'inverse ratio','residual_Boozer', 'residual_qs', 'cost_function')
     
     def cost_print(self, niter, dofs) -> str:
         cost = self.costfunction(dofs)
-        self.updateInverseRatio()
-        return "{:>8d} {:>14f} {:>14f} {:>14f} {:>18e} {:>18e} {:>18e}".format(
+        if not self._constraint['inverse ratio']:
+            self.updateInverseRatio()
+        if not self._constraint['min crossarea']:
+            self.updateMinCrossArea()
+        return "{:>8d} {:>14f} {:>16f} {:>16f} {:>18e} {:>18e} {:>18e}".format(
             niter,
             self.iota,
-            self.area,
-            self.volume,
+            self.minCrossArea,
+            self.inverseRatio,
             np.linalg.norm(np.hstack((self.Boozer_residual.reArr, self.Boozer_residual.imArr))),
             np.linalg.norm(np.hstack((self.qs_residual.reArr, self.qs_residual.imArr))),
             cost

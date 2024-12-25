@@ -12,6 +12,7 @@ class IsolatedSurface(SurfProblem):
 
     def __init__(self, r: ToroidalField = None, z: ToroidalField = None, omega: ToroidalField = None, mpol: int = None, ntor: int = None, nfp: int = None, reverseToroidalAngle: bool = False, reverseOmegaAngle: bool = True) -> None:
         super().__init__(r, z, omega, mpol, ntor, nfp, reverseToroidalAngle, reverseOmegaAngle)
+        self.addconstraint('min crossarea', 0.01, 0.03)
 
     def BoozerResidual(self, guu, guv, gvv) -> ToroidalField:
         return guv + self.iota*guu    
@@ -19,17 +20,23 @@ class IsolatedSurface(SurfProblem):
     def iotaResidual(self) -> float:
         return self._weight['iota']*(self.iota/self._target['iota']-1)**2
     
-    # def ratioResidual(self) -> float:
-    #     return self._weight['inverse ratio']*(self._target['inverse ratio']-self.inverseRatio)**2
+    def ratioResidual(self) -> float:
+        return self._weight['inverse ratio']*(self._target['inverse ratio']-self.inverseRatio)**2
+    
+    def crossareaResidual(self) -> float:
+        return self._weight['min crossarea']*np.abs(np.log(self.minCrossArea/self._target['min crossarea']))
     
     def updateResidual(self):
         self.guu, self.guv, self.gvv = self.metric
         self.Boozer_residual =  self.BoozerResidual(self.guu, self.guv, self.gvv)
         if self._constraint['iota']:
             self.iota_residual = self.iotaResidual()
-        # if self._constraint['inverse ratio']:
-        #     self.updateInverseRatio()
-        #     self.ratio_residual = self.ratioResidual()
+        if self._constraint['inverse ratio']:
+            self.updateInverseRatio()
+            self.ratio_residual = self.ratioResidual()
+        if self._constraint['min crossarea']:
+            self.updateMinCrossArea()
+            self.crossarea_residual = self.crossareaResidual()
             
     def costfunction(self, dofs):
         self.unpackDOF(dofs)
@@ -37,21 +44,26 @@ class IsolatedSurface(SurfProblem):
         cost = np.linalg.norm(np.hstack((self.Boozer_residual.reArr, self.Boozer_residual.imArr)))
         if self._constraint['iota']:
             cost += self.iota_residual
-        # if self._constraint['inverse ratio']:
-        #     cost += self.ratio_residual
+        if self._constraint['inverse ratio']:
+            cost += self.ratio_residual
+        if self._constraint['min crossarea']:
+            cost += self.crossarea_residual
         return cost
     
     def info_print(self) -> str:
-        return "{:>8} {:>14} {:>14} {:>14} {:>18} {:>18}".format('niter', 'iota', 'area', 'volume', 'residual_Boozer', 'cost_function')
+        return "{:>8} {:>14} {:>16} {:>16} {:>18} {:>18}".format('niter', 'iota', 'min-crossarea', 'inverse ratio', 'residual_Boozer', 'cost_function')
 
     def cost_print(self, niter, dofs) -> str:
         cost = self.costfunction(dofs)
-        self.updateInverseRatio()
-        return "{:>8d} {:>14f} {:>14f} {:>14f} {:>18e} {:>18e}".format(
+        if not self._constraint['inverse ratio']:
+            self.updateInverseRatio()
+        if not self._constraint['min crossarea']:
+            self.updateMinCrossArea()
+        return "{:>8d} {:>14f} {:>16f} {:>16f} {:>18e} {:>18e}".format(
             niter,
             self.iota,
-            self.area,
-            self.volume,
+            self.minCrossArea,
+            self.inverseRatio,
             np.linalg.norm(np.hstack((self.Boozer_residual.reArr, self.Boozer_residual.imArr))),
             cost
         )

@@ -70,7 +70,7 @@ class SurfProblem(Surface_BoozerAngle):
     def _init_constraint(self):
         self._constraint = {
             'iota': False,
-            # 'inverse ratio': False
+            'inverse ratio': False
         }
         
     def updateconstraint(self, key: str, value: bool):
@@ -82,7 +82,7 @@ class SurfProblem(Surface_BoozerAngle):
     def _init_weight(self):
         self._weight = {
             'iota': 0.1,
-            # 'inverse ratio': 0.01
+            'inverse ratio': 0.01
         }
         
     def updateweight(self, key: str, value: float):
@@ -94,7 +94,7 @@ class SurfProblem(Surface_BoozerAngle):
     def _init_target(self):
         self._target = {
             'iota': 0.309,
-            # 'inverse ratio': 0.1
+            'inverse ratio': 0.1
         }
         
     def updatetarget(self, key: str, value):
@@ -111,10 +111,6 @@ class SurfProblem(Surface_BoozerAngle):
     @property
     def iota(self):
         return self._iota
-
-    @property
-    def majorRadius(self):
-        return self.r.getRe(0,0)
     
     def updateIota(self, iota):
         self._iota = iota
@@ -126,6 +122,13 @@ class SurfProblem(Surface_BoozerAngle):
         self.minorR = 2*self.volume/self.area
         self.inverseRatio = self.minorR / self.majorR
 
+    def updateMinCrossArea(self):
+        try:
+            crossArea = np.abs([self.getCrossArea(phi, npol=128) for phi in np.linspace(0,2*np.pi/self.nfp,64)])
+        except:
+            crossArea = 1e-14 
+        self.minCrossArea = np.min(crossArea)
+    
     def changeResolution(self, mpol: int, ntor: int):
         self._mpol, self._ntor = mpol, ntor
         self.r = changeResolution(self.r, mpol, ntor)
