@@ -26,7 +26,7 @@ class SurfProblem(Surface_BoozerAngle):
             self._mpol, self._ntor = mpol, ntor
             r = ToroidalField.constantField(1, nfp=nfp, mpol=mpol, ntor=ntor)
             z = ToroidalField.constantField(0, nfp=nfp, mpol=mpol, ntor=ntor)
-            omega = ToroidalField.constantField(0, nfp=nfp, mpol=2*mpol, ntor=2*ntor)
+            omega = ToroidalField.constantField(0, nfp=nfp, mpol=mpol, ntor=ntor)
             super().__init__(r, z, omega, reverseToroidalAngle, reverseOmegaAngle)
             self.changeStellSym(True)
             self._iota = 0.0
@@ -34,7 +34,7 @@ class SurfProblem(Surface_BoozerAngle):
             if mpol is None or ntor is None:
                 mpol, ntor = r.mpol, r.ntor
             self._mpol, self._ntor = mpol, ntor
-            super().__init__(changeResolution(r,mpol,ntor), changeResolution(z,mpol,ntor), changeResolution(omega,2*mpol,2*ntor), reverseToroidalAngle, reverseOmegaAngle)
+            super().__init__(changeResolution(r,mpol,ntor), changeResolution(z,mpol,ntor), changeResolution(omega,mpol,ntor), reverseToroidalAngle, reverseOmegaAngle)
             self._init_iota()
         self._init_dofs()
         self._init_paras()
@@ -50,11 +50,11 @@ class SurfProblem(Surface_BoozerAngle):
         self.doflabels = {}
         self.doflabels['rc'] = [False for i in range(self.mpol*(2*self.ntor+1)+self.ntor)]
         self.doflabels['zs'] = [False for i in range(self.mpol*(2*self.ntor+1)+self.ntor)]
-        self.doflabels['omegas'] = [False for i in range(2*self.mpol*(4*self.ntor+1)+2*self.ntor)]
+        self.doflabels['omegas'] = [False for i in range(self.mpol*(2*self.ntor+1)+self.ntor)]
         if not self.stellSym:
             self.doflabels['rs'] = [False for i in range(self.mpol*(2*self.ntor+1)+self.ntor)]
             self.doflabels['zc'] = [False for i in range(self.mpol*(2*self.ntor+1)+self.ntor)]
-            self.doflabels['omegac'] = [False for i in range(2*self.mpol*(4*self.ntor+1)+2*self.ntor)]
+            self.doflabels['omegac'] = [False for i in range(self.mpol*(2*self.ntor+1)+self.ntor)]
 
     def _init_paras(self):
         self.paras = {
@@ -81,7 +81,7 @@ class SurfProblem(Surface_BoozerAngle):
             
     def _init_weight(self):
         self._weight = {
-            'iota': 0.1,
+            'iota': 0.05,
             'inverse ratio': 0.01
         }
         
@@ -122,9 +122,9 @@ class SurfProblem(Surface_BoozerAngle):
         self.minorR = 2*self.volume/self.area
         self.inverseRatio = self.minorR / self.majorR
 
-    def updateMinCrossArea(self):
+    def updateMinCrossArea(self, npol: int=128, ntor: int=64):
         try:
-            crossArea = np.abs([self.getCrossArea(phi, npol=128) for phi in np.linspace(0,2*np.pi/self.nfp,64)])
+            crossArea = np.abs([self.getCrossArea(phi, npol=npol) for phi in np.linspace(0,2*np.pi/self.nfp,ntor)])
         except:
             crossArea = 1e-14 
         self.minCrossArea = np.min(crossArea)
@@ -248,13 +248,13 @@ class SurfProblem(Surface_BoozerAngle):
                 if label:
                     if key == 'rc':
                         m, n = self.r.indexReverseMap(i+1)
-                        dofs[dofindex] = self.r.getRe(m,n) / pow(self.paras['powerIndex'],abs(m)+abs(n))
+                        dofs[dofindex] = self.r.getRe(m,n) * pow(self.paras['powerIndex'],abs(m)+abs(n))
                     elif key == 'zs':
                         m, n = self.z.indexReverseMap(i+1)
-                        dofs[dofindex] = self.z.getIm(m,n) / pow(self.paras['powerIndex'],abs(m)+abs(n))
+                        dofs[dofindex] = self.z.getIm(m,n) * pow(self.paras['powerIndex'],abs(m)+abs(n))
                     elif key == 'omegas':
                         m, n = self.omega.indexReverseMap(i+1)
-                        dofs[dofindex] = self.omega.getIm(m,n) / pow(self.paras['powerIndex'],abs(m)+abs(n))
+                        dofs[dofindex] = self.omega.getIm(m,n) * pow(self.paras['powerIndex'],abs(m)+abs(n))
                     dofindex += 1
         if not self.stellSym:
             for key in ['rs', 'zc', 'omegac']:
@@ -262,13 +262,13 @@ class SurfProblem(Surface_BoozerAngle):
                     if label:
                         if key == 'rs':
                             m, n = self.r.indexReverseMap(i+1)
-                            dofs[dofindex] = self.r.getIm(m,n) / pow(self.paras['powerIndex'],abs(m)+abs(n))
+                            dofs[dofindex] = self.r.getIm(m,n) * pow(self.paras['powerIndex'],abs(m)+abs(n))
                         elif key == 'zc':
                             m, n = self.z.indexReverseMap(i+1)
-                            dofs[dofindex] = self.z.getRe(m,n) / pow(self.paras['powerIndex'],abs(m)+abs(n))
+                            dofs[dofindex] = self.z.getRe(m,n) * pow(self.paras['powerIndex'],abs(m)+abs(n))
                         elif key == 'omegac':
                             m, n = self.omega.indexReverseMap(i+1)
-                            dofs[dofindex] = self.omega.getRe(m,n) / pow(self.paras['powerIndex'],abs(m)+abs(n))
+                            dofs[dofindex] = self.omega.getRe(m,n) * pow(self.paras['powerIndex'],abs(m)+abs(n))
                         dofindex += 1
         dofs[-1] = self.iota
         return dofs
@@ -281,13 +281,13 @@ class SurfProblem(Surface_BoozerAngle):
                 if label:
                     if key == 'rc':
                         m, n = self.r.indexReverseMap(i+1)
-                        self.r.setRe(m,n,dofs[dofindex]*pow(self.paras['powerIndex'],abs(m)+abs(n)))
+                        self.r.setRe(m,n,dofs[dofindex] / pow(self.paras['powerIndex'],abs(m)+abs(n)))
                     elif key == 'zs':
                         m, n = self.z.indexReverseMap(i+1)
-                        self.z.setIm(m,n,dofs[dofindex]*pow(self.paras['powerIndex'],abs(m)+abs(n)))
+                        self.z.setIm(m,n,dofs[dofindex] / pow(self.paras['powerIndex'],abs(m)+abs(n)))
                     elif key == 'omegas':
                         m, n = self.omega.indexReverseMap(i+1)
-                        self.omega.setIm(m,n,dofs[dofindex]*pow(self.paras['powerIndex'],abs(m)+abs(n)))
+                        self.omega.setIm(m,n,dofs[dofindex] / pow(self.paras['powerIndex'],abs(m)+abs(n)))
                     dofindex += 1
         if not self.stellSym:
             for key in ['rs', 'zc', 'omegac']:
@@ -295,13 +295,13 @@ class SurfProblem(Surface_BoozerAngle):
                     if label:
                         if key == 'rs':
                             m, n = self.r.indexReverseMap(i+1)
-                            self.r.setIm(m,n,dofs[dofindex]*pow(self.paras['powerIndex'],abs(m)+abs(n)))
+                            self.r.setIm(m,n,dofs[dofindex] / pow(self.paras['powerIndex'],abs(m)+abs(n)))
                         elif key == 'zc':
                             m, n = self.z.indexReverseMap(i+1)
-                            self.z.setRe(m,n,dofs[dofindex]*pow(self.paras['powerIndex'],abs(m)+abs(n)))
+                            self.z.setRe(m,n,dofs[dofindex] / pow(self.paras['powerIndex'],abs(m)+abs(n)))
                         elif key == 'omegac':
                             m, n = self.omega.indexReverseMap(i+1)
-                            self.omega.setRe(m,n,dofs[dofindex]*pow(self.paras['powerIndex'],abs(m)+abs(n)))
+                            self.omega.setRe(m,n,dofs[dofindex] / pow(self.paras['powerIndex'],abs(m)+abs(n)))
                         dofindex += 1
         self.updateIota(dofs[-1])
         return

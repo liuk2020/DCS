@@ -12,10 +12,10 @@ class IsolatedSurface(SurfProblem):
 
     def __init__(self, r: ToroidalField = None, z: ToroidalField = None, omega: ToroidalField = None, mpol: int = None, ntor: int = None, nfp: int = None, reverseToroidalAngle: bool = False, reverseOmegaAngle: bool = True) -> None:
         super().__init__(r, z, omega, mpol, ntor, nfp, reverseToroidalAngle, reverseOmegaAngle)
-        self.addconstraint('min crossarea', 0.01, 0.03)
+        self.addconstraint('min crossarea', 1e-4, 0.0314)
 
     def BoozerResidual(self, guu, guv, gvv) -> ToroidalField:
-        return guv + self.iota*guu    
+        return guv + self.iota*guu 
 
     def iotaResidual(self) -> float:
         return self._weight['iota']*(self.iota/self._target['iota']-1)**2
@@ -35,7 +35,7 @@ class IsolatedSurface(SurfProblem):
             self.updateInverseRatio()
             self.ratio_residual = self.ratioResidual()
         if self._constraint['min crossarea']:
-            self.updateMinCrossArea()
+            self.updateMinCrossArea(npol=64, ntor=16)
             self.crossarea_residual = self.crossareaResidual()
             
     def costfunction(self, dofs):
@@ -57,8 +57,7 @@ class IsolatedSurface(SurfProblem):
         cost = self.costfunction(dofs)
         if not self._constraint['inverse ratio']:
             self.updateInverseRatio()
-        if not self._constraint['min crossarea']:
-            self.updateMinCrossArea()
+        self.updateMinCrossArea()
         return "{:>8d} {:>14f} {:>16f} {:>16f} {:>18e} {:>18e}".format(
             niter,
             self.iota,
