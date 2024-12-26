@@ -17,8 +17,8 @@ class IsolatedSurface(SurfProblem):
     def BoozerResidual(self, guu, guv, gvv) -> ToroidalField:
         return guv + self.iota*guu 
 
-    def iotaResidual(self) -> float:
-        return self._weight['iota']*(self.iota/self._target['iota']-1)**2
+    # def iotaResidual(self) -> float:
+    #     return self._weight['iota']*(self.iota/self._target['iota']-1)**2
     
     def ratioResidual(self) -> float:
         return self._weight['inverse ratio']*(self._target['inverse ratio']-self.inverseRatio)**2
@@ -29,8 +29,8 @@ class IsolatedSurface(SurfProblem):
     def updateResidual(self):
         self.guu, self.guv, self.gvv = self.metric
         self.Boozer_residual =  self.BoozerResidual(self.guu, self.guv, self.gvv)
-        if self._constraint['iota']:
-            self.iota_residual = self.iotaResidual()
+        # if self._constraint['iota']:
+        #     self.iota_residual = self.iotaResidual()
         if self._constraint['inverse ratio']:
             self.updateInverseRatio()
             self.ratio_residual = self.ratioResidual()
@@ -42,8 +42,8 @@ class IsolatedSurface(SurfProblem):
         self.unpackDOF(dofs)
         self.updateResidual()
         cost = np.linalg.norm(np.hstack((self.Boozer_residual.reArr, self.Boozer_residual.imArr)))
-        if self._constraint['iota']:
-            cost += self.iota_residual
+        # if self._constraint['iota']:
+        #     cost += self.iota_residual
         if self._constraint['inverse ratio']:
             cost += self.ratio_residual
         if self._constraint['min crossarea']:
